@@ -1,0 +1,235 @@
+theory ResMap
+  imports WellTypedExp GenSubEnv
+begin
+  
+ 
+    
+    (* resource map *)
+  
+datatype 'a p_stack =
+  NilStack
+  | ConsStack string 'a "'a p_stack"  
+  
+type_synonym res_map = "perm_use_env p_stack" 
+
+definition add_mem where
+  "add_mem s x v = ConsStack x v s"  
+  
+fun rem_mem where  
+  "rem_mem NilStack x = NilStack"  
+| "rem_mem (ConsStack x v s') x' = (if x = x' then rem_mem s' x' else ConsStack x v (rem_mem s' x'))"    
+  
+fun lookup_mem where
+  "lookup_mem NilStack x' = None"
+| "lookup_mem (ConsStack x v s') x' = (if x = x' then Some (v, s') else lookup_mem s' x')"  
+
+definition lookup_res where  
+  "lookup_res s x = (case lookup_mem s x of None \<Rightarrow> empty_use_env | Some (v, s') \<Rightarrow> v)"    
+
+definition sub_res_map where
+  "sub_res_map s rs_map = (\<forall> x. (s x = None) = (lookup_mem rs_map x = None))"     
+  
+    (* simple lemmas *)  
+
+lemma lookup_rem_mem_none1: "lookup_mem (rem_mem rs_map x) x = None"    
+  apply (induct rs_map)
+   apply (auto)
+  done    
+    
+lemma lookup_rem_mem_none2: "\<lbrakk> lookup_mem rs_map y = None \<rbrakk> \<Longrightarrow> lookup_mem (rem_mem rs_map x) y = None"    
+  apply (induct rs_map)
+   apply (auto)
+  done        
+ 
+lemma lookup_add_mem_same: "lookup_res (add_mem rs_map x r_s) x = r_s"       
+  apply (simp add: lookup_res_def)
+  apply (simp add: add_mem_def)
+  done
+
+lemma lookup_add_mem_diff: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> lookup_res (add_mem rs_map x r_s) y = lookup_res rs_map y"       
+  apply (simp add: lookup_res_def)
+  apply (simp add: add_mem_def)
+  done    
+    
+lemma lookup_rem_mem_same: "lookup_res (rem_mem rs_map x) x = empty_use_env"    
+  apply (induct rs_map)
+   apply (auto)
+   apply (simp add: lookup_res_def)
+  apply (simp add: lookup_res_def)
+  done    
+    
+lemma lookup_rem_mem_diff: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> lookup_res (rem_mem rs_map x) y = lookup_res rs_map y"
+  apply (induct rs_map)
+   apply (auto)
+   apply (simp add: lookup_res_def)
+  apply (simp add: lookup_res_def)
+  done      
+    
+    (* - res map equalities *)
+  
+lemma almost_comm_rem_add_mem: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> rem_mem (add_mem s x v) y = add_mem (rem_mem s y) x v"    
+  apply (induct s)
+   apply (simp add: add_mem_def)
+  apply (simp add: add_mem_def)
+  done
+
+lemma ignore_rem_add_mem: "rem_mem (add_mem s x v) x = rem_mem s x "    
+  apply (simp add: add_mem_def)
+  done    
+    
+  (*
+lemma ignore_rem_res_map: "\<lbrakk> lookup_res rs_map x = empty_use_env \<rbrakk> \<Longrightarrow> rem_mem rs_map x = rs_map"
+  apply (case_tac "\<forall> y. rem_mem rs_map x y = rs_map y")
+   apply (auto)
+  apply (simp add: rem_res_map_def)
+  apply (simp add: set_res_map_def)
+  apply (case_tac "x = y")
+   apply (auto)
+  done
+  
+lemma partial_rem_set_res_map: "rem_res_map (set_res_map rs_map x r_s) x = rem_res_map rs_map x"  
+  apply (simp add: rem_res_map_def)
+  apply (simp add: set_res_map_def)
+  apply (auto)
+  done*)
+
+    (* - sub res map lemmas *)
+
+lemma add_sub_res_map_rev: "\<lbrakk> sub_res_map s (add_mem rs_map x r_s); lookup_mem (rs_map :: perm_use_env p_stack) x = None \<rbrakk> \<Longrightarrow>
+    sub_res_map (rem_env s x) rs_map"
+    (* we want to prove that if s + rs_map were exactly matched, they will remain exactly matched even after adding x to rs_map. *)
+  apply (simp add: sub_res_map_def)
+  apply (auto)
+   apply (simp add: rem_env_def)
+   apply (case_tac "x = xa")
+    apply (auto)
+   apply (simp add: add_mem_def)
+  apply (simp add: rem_env_def)
+  apply (auto)
+  apply (simp add: add_mem_def)
+  done
+    
+    (*
+lemma add_sub_res_map_rev: "\<lbrakk> sub_res_map s (add_mem rs_map x r_s); lookup_mem (rs_map :: perm_use_env p_stack) x = None \<rbrakk> \<Longrightarrow> sub_res_map s rs_map"
+    (* we want to prove that if s + rs_map were exactly matched, they will remain exactly matched even after adding x to rs_map. *)
+  apply (simp add: sub_res_map_def)
+  apply (auto)
+   apply (case_tac "x = xa")
+    apply (auto)
+   apply (case_tac "lookup_res rs_map xa = empty_use_env")
+    
+   apply (cut_tac rs_map="rs_map" and x="x" and r_s="r_s" and y="xa" in lookup_add_mem_diff)
+    apply (auto)
+   apply (simp add: lookup_res_def)
+    apply (simp add: emp
+  apply (erule_tac x="xa" in allE)
+  apply (auto)
+  apply (simp add: add_mem_def)
+  apply (case_tac "x = xa")
+   apply (auto)
+  done*)
+    
+    (*
+lemma rem_compl_res_map: "\<lbrakk> compl_res_map s rs_map \<rbrakk> \<Longrightarrow> compl_res_map s (rem_mem rs_map x)"
+  apply (simp add: sub_res_map_def)
+  apply (auto)
+  apply (case_tac "x = xa")
+   apply (simp add: lookup_rem_mem_none1)
+  apply (simp add: lookup_rem_mem_none2)
+  done
+    
+
+    
+lemma add_rem_sub_res_map: "\<lbrakk> sub_res_map (add_env s x v) rs_map \<rbrakk> \<Longrightarrow> sub_res_map s (rem_mem rs_map x)"     
+  apply (simp add: sub_res_map_def)
+  apply (simp add: add_env_def)
+  apply (auto)
+  apply (erule_tac x="xa" in allE)
+  apply (case_tac "x = xa")
+   apply (auto)
+   apply (simp add: lookup_rem_mem_none1)
+  apply (simp add: lookup_rem_mem_none2)
+  done*)
+    
+lemma add_sub_res_map: "\<lbrakk> sub_res_map s rs_map \<rbrakk> \<Longrightarrow> sub_res_map (add_env s x v) (add_mem rs_map x r_s) "    
+  apply (simp add: sub_res_map_def)
+  apply (simp add: add_env_def)
+  apply (simp add: add_mem_def)
+  done
+    
+    (* ## NEW RES MAP DEFINITION ## *)
+
+type_synonym nres_map = "string \<Rightarrow> perm_use_env option"   
+    
+definition full_nres_map where
+  "full_nres_map s s_map = (\<forall> x. (s x = None) = (s_map x = None))"  
+  
+definition nres_lookup where
+  "nres_lookup rs_map x = (case rs_map x of
+    None \<Rightarrow> empty_use_env
+    | Some r_s \<Rightarrow> r_s
+  )"  
+  
+lemma nres_add_same: "nres_lookup (add_env rs_map x r_s) x = r_s"       
+  apply (simp add: nres_lookup_def)
+  apply (simp add: add_env_def)
+  done
+
+lemma nres_add_diff: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> nres_lookup (add_env rs_map x r_s) y = nres_lookup rs_map y"       
+  apply (simp add: nres_lookup_def)
+  apply (simp add: add_env_def)
+  done    
+    
+lemma nres_rem_same: "nres_lookup (rem_env rs_map x) x = empty_use_env"    
+  apply (simp add: nres_lookup_def)
+  apply (simp add: rem_env_def)
+  done    
+    
+lemma nres_rem_diff: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> nres_lookup (rem_env rs_map x) y = nres_lookup rs_map y"
+  apply (simp add: nres_lookup_def)
+  apply (simp add: rem_env_def)
+  done       
+    
+lemma add_full_nres_map: "\<lbrakk> full_nres_map s rs_map \<rbrakk> \<Longrightarrow> full_nres_map (add_env s x v) (add_env rs_map x r_s)"
+  apply (simp add: add_env_def)
+  apply (simp add: full_nres_map_def)
+  done
+  
+definition sub_nres_map where
+  "sub_nres_map s s_map = (\<forall> x. sub_use_env s (nres_lookup s_map x))"       
+  
+lemma add_sub_nres_map2: "\<lbrakk> sub_nres_map s rs_map; s x = None \<rbrakk> \<Longrightarrow> sub_nres_map (add_env s x v) rs_map "    
+  apply (simp add: sub_nres_map_def)
+  apply (auto)
+  apply (erule_tac x="xa" in allE)
+  apply (rule_tac s="s" in contain_sub_use_env)
+   apply (simp)
+  apply (rule_tac add_contain_env)
+  apply (simp)
+  done
+  
+lemma add_sub_nres_map1: "\<lbrakk> sub_nres_map s rs_map; sub_use_env s r_s \<rbrakk> \<Longrightarrow> sub_nres_map s (add_env rs_map x r_s) "    
+  apply (simp add: sub_nres_map_def)
+  apply (auto)
+  apply (case_tac "x = xa")
+   apply (cut_tac rs_map="rs_map" and x="x" and r_s="r_s" in nres_add_same)
+   apply (auto)
+  apply (cut_tac rs_map="rs_map" and x="x" and r_s="r_s" in nres_add_diff)
+   apply (auto)
+  done
+ 
+lemma dist_add_sub_nres_map: "\<lbrakk> sub_nres_map s rs_map; sub_use_env s r_s \<rbrakk> \<Longrightarrow> sub_nres_map (add_env s x v) (add_env rs_map x r_s) "       
+  apply (simp add: sub_nres_map_def)
+  apply (auto)
+  apply (case_tac "x = xa")
+   apply (cut_tac rs_map="rs_map" and x="x" and r_s="r_s" in nres_add_same)
+   apply (auto)
+   apply (rule_tac add_sub_use_env)
+   apply (simp)
+  apply (cut_tac rs_map="rs_map" and x="x" and r_s="r_s" in nres_add_diff)
+   apply (auto)
+  apply (rule_tac add_sub_use_env)
+  apply (simp)
+  done
+    
+end

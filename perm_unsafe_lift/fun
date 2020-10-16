@@ -1,0 +1,44 @@
+
+-- most basic use envs
+add_use_env
+rem_use_env
+diff_use_env
+comp_use_env
+
+-- properties
+weak_use_env
+strong_use_env [[wt_break, used to generate a strong subtracter for complete_use_env,
+	also interacts with cut_use_env]]
+aff_use_env [[proc_lang_x]]
+
+-- lifting
+lift_use_env
+drop_use_env (reduces to all use) [[ subst_type_preserve, used to induct in stpx ]]
+drop_use_env_ex
+cut_use_env (removes all uses) [[ red_proof, used in sares to make disjointness simpler (may be redundant?) ]]
+
+-- relational
+leq_use_env
+mini_disj_use_env
+disj_use_env
+strong_disj_use_env [[state_env, used to define sep / disj res_map]]
+
+-- norming lemmas
+complete_use_env (lifts r_x to r_s) [[wt_break, used in the induction of well_typed_diff_end_perm]]
+norm_use_env (reduces r_x to domain of r_s) [[used in the lam case + app case to appropriately restrict the subtracters]]
+super_norm_use_env (related to infl_use_env, reduces r_x to ownership r_s)
+	[[ used in the lbound lemma for the same purpose as complete_use_env ]]
+infl_use_env (difference infer) [[ constructively used to define flat permissions ]]
+* r_s - (infl r_s r_x) = snorm r_s r_x
+
+-- abbrev
+rename_use_env [[ used in alpha_rename proof ]]
+
+-- conversion
+~~intro / elim use_env
+res_use_env (ownership from set) [[ used in sares to decide how to add permissions to the res_map ]]
+
+-- constructive
+req_use_env
+end_neg / stpx_req
+red_use_env

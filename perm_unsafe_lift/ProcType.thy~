@@ -1,0 +1,150 @@
+theory ProcType
+  imports Main
+begin
+  
+    (* 
+      ####################################
+        P1. permission definitions
+      ####################################
+    *)  
+  
+datatype p_perm = NoPerm | UsePerm | OwnPerm  
+
+datatype ext_perm = NoEP | DiffEP | OwnEP    
+  
+fun leq_perm where
+  "leq_perm UsePerm NoPerm = False"
+| "leq_perm OwnPerm NoPerm = False"
+| "leq_perm OwnPerm UsePerm = False"
+| "leq_perm p1 p2 = True"
+ 
+fun minus_ep where
+  "minus_ep NoPerm p = NoPerm"
+| "minus_ep UsePerm OwnEP = NoPerm"
+| "minus_ep UsePerm p = UsePerm"
+| "minus_ep OwnPerm OwnEP = NoPerm"
+| "minus_ep OwnPerm DiffEP = UsePerm"
+| "minus_ep OwnPerm p = OwnPerm"
+  
+fun union_ep where
+  "union_ep OwnPerm p = OwnPerm"
+| "union_ep UsePerm OwnEP = OwnPerm"
+| "union_ep UsePerm DiffEP = OwnPerm"
+| "union_ep UsePerm p = UsePerm"
+| "union_ep NoPerm OwnEP = OwnPerm"
+| "union_ep NoPerm DiffEP = UsePerm"
+| "union_ep NoPerm NoEP = NoPerm"
+  
+fun union_perm where
+  "union_perm OwnPerm p = OwnPerm"
+| "union_perm p OwnPerm = OwnPerm"
+| "union_perm NoPerm NoPerm = NoPerm"
+| "union_perm p1 p2 = UsePerm"  
+
+    (* 
+      ####################################
+        P2. type definitions
+      ####################################
+    *)
+
+datatype p_aff = Aff | NoAff  
+  
+datatype p_type =
+   IntTy | UnitTy | BoolTy
+  | ArrayTy p_type  
+  | PairTy p_type p_type
+  | FunTy p_type p_type p_perm p_aff
+  | ChanTy p_type 
+
+    (* pairs are unlimited just like arrays because any destructive uses of a pair
+        will be filtered out at the level of primitive functions. *)
+    
+fun unlim where
+  "unlim (FunTy t1 t2 r a) = (a = NoAff)"
+| "unlim (ChanTy tau) = False"
+| "unlim tau = True"    
+    
+
+type_synonym 'a gen_env = "string \<Rightarrow> 'a option"  
+  
+type_synonym pt_env = "p_type gen_env" 
+  
+definition empty_env where
+  "empty_env x = None"  
+  
+definition add_env where
+  "add_env env x t = (\<lambda> x'. if x = x' then Some t else env x')"  
+    
+definition rem_env where
+  "rem_env env x = (\<lambda> x'. if x = x' then None else env x')"
+  
+    (* #### basic add/rem lemmas #### *)
+  
+lemma almost_comm_add_env: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> add_env (add_env env y t) x t' = add_env (add_env env x t') y t"
+  apply (simp add: add_env_def)
+  apply (auto)
+  done
+    
+lemma double_add_env: "add_env (add_env env x t) x t' = add_env env x t'"
+  apply (simp add: add_env_def)
+  apply (auto)
+  done
+  
+lemma ignore_rem_env: "\<lbrakk> env x = None \<rbrakk> \<Longrightarrow> env = rem_env env x"    
+  apply (case_tac "\<forall> x'. env x' = rem_env env x x'")
+   apply (auto)
+  apply (simp add: rem_env_def)
+  apply (case_tac "x = x'")
+   apply (auto)
+  done
+  
+lemma cancel_rem_add_env: "\<lbrakk> env x = None \<rbrakk> \<Longrightarrow> env = rem_env (add_env env x t) x"
+  apply (case_tac "\<forall> x'. env x' = rem_env (add_env env x t) x x'")
+   apply (auto)
+  apply (simp add: add_env_def)
+  apply (simp add: rem_env_def)
+  apply (case_tac "x = x'")
+   apply (auto)
+  done
+    
+lemma partial_add_rem_env: "add_env (rem_env env x) x t = add_env env x t"
+  apply (case_tac "\<forall> x'. add_env (rem_env env x) x t x' = add_env env x t x'")
+   apply (auto)
+  apply (simp add: add_env_def)
+  apply (case_tac "x = x'")
+   apply (auto)  
+  apply (simp add: rem_env_def)
+  done
+   
+    
+lemma cancel_add_rem_env: "\<lbrakk> env x = Some y \<rbrakk> \<Longrightarrow> env = add_env (rem_env env x) x y"
+  apply (case_tac "\<forall> x'. env x' = add_env (rem_env env x) x y x'")
+   apply (auto)
+  apply (simp add: add_env_def)
+  apply (case_tac "x = x'")
+   apply (auto)
+  apply (simp add: rem_env_def)
+  done
+
+lemma partial_rem_add_env: "rem_env (add_env env x y) x = rem_env env x"    
+  apply (case_tac "\<forall> x'. rem_env (add_env env x y) x x' = rem_env env x x'")
+   apply (auto)
+  apply (simp add: rem_env_def)
+  apply (case_tac "x = x'")
+   apply (auto)
+  apply (simp add: add_env_def)
+  done    
+    
+lemma almost_comm_add_rem_env: "\<lbrakk> x \<noteq> y \<rbrakk> \<Longrightarrow> add_env (rem_env env x) y t = rem_env (add_env env y t) x"
+  apply (case_tac "\<forall> x'. add_env (rem_env env x) y t x' = rem_env (add_env env y t) x x'")
+   apply (auto)
+  apply (simp add: add_env_def)
+  apply (simp add: rem_env_def)
+  apply (case_tac "y = x'")
+   apply (auto)
+  apply (simp add: rem_env_def)
+  apply (case_tac "x = x'")
+   apply (auto)
+  done
+  
+end

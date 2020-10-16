@@ -1,0 +1,226 @@
+
+y WTBreak
+
+RedProof -> SafeRedLemma
+ReduceUseEnv -> SRUseEnv
+SafeRename -> SafeSubRename
+SafeSTPX -> SafeSubTPX
+
+?? move out super norm?
+
+
+	### general
+
+:: GenEnv
+gen_env def
+
+:: GenSubEnv
+sub_env (gen_env containment)
+contain_env
+sub_use_env (perm_use_env in gen_env)
+
+:: PermEnv
+perm def
+perm_use_env def
+
+indy perm lemmas
+
+:: TypeEnv
+aff def [one-liner]
+type def
+unlim
+prim_type
+pt_env (type gen_env)
+
+:: PermEnvLeq
+main ordering lemmas
+disjointness ordering lemmas
+unroll/fold lemmas
+'lease' lemmas
+
+:: PermEnvEq
+main equality lemmas
+
+:: PermEnvDisj
+semi-disjointness lemmas
+main disjointness lemmas
+weakness lemmas
+
+:: LiftEnv
+lift_use_env
+safe_use_lift / safe_type
+
+lift safety lemmas
+
+:: StrongEnv
+strong_use_env
+
+:: NormEnv
+norm_use_env (reduces r_x to domain of r_s)
+
+norm leq/disj lemmas
+
+
+	### general well-typedness
+
+:: WTAffEnv
+aff_use_env
+
+:: WTReqEnv
+req_use_env def
+
+:: WellTypedExp
+expression def
+is_value / is_sexp
+env_vars
+pure_fun
+~~ is_unique / take_fun
+free_vars
+well_typed def
+is_own
+
+:: WTLemma
+well_typed perm lemmas
+well_typed fv lemmas
+well_typed env lemmas
+well_typed contain_env
+well_typed use_env lemmas
+
+
+	### substitution type preservation
+
+:: SubstDropEnv
+drop_use_env (reduces to all use)
+drop_use_env_ex
+
+drop lemmas
+wt_sexp drop lemma
+wt_sexp drop_all lemma
+wt_sexp drop_all_ex lemma
+
+:: SubstExp
+lam_vars
+subst_exp
+renaming defs
+safe_subst_exp
+
+no fv subst_type_preserve
+basic sexp lemmas
+
+:: SubstTPX
+end_neg_use_env (subtracts r_x conditionally)
+stpx_req (includes perms from rx2 conditionally)
+
+end_neg lemmas
+stpx_req lemmas
+well_typed stpx_req lemma
+substitution type preservation lemma
+
+
+	### flat permission lemma
+
+:: FlatCutEnv
+cut_use_env (removes all uses)
+
+:: FlatLemma
+infl_use_env (difference infer)
+
+infl lemmas
+'msum_diff_comp_use_env'
+sexp flat perm lemma
+general sexp flat perm lemma
+
+:: OldFlatLemma
+og flat perm lemma	
+
+
+	### safe subst type preserve
+
+:: SafeSubRename
+rename_use_env
+
+rename lemmas
+alpha_rename type preservation
+lam_var_remove type preservation
+lam_var_list remove type preservation
+
+:: SafeSubTPX
+super_norm_use_env (related to infl_use_env, reduces r_x to ownership r_s)
+
+substitution type application lemma
+stray lam var / rename lemmas
+norm lemmas
+well_typed norm lemma
+snorm lemmas
+well_typed snorm lemma
+well_typed end_perm lower bound lemma
+safe substitution type preservation lemma
+
+
+	### stack stuff
+
+:: ResMap
+lookup_res
+p_stack / res_map def
+sub_res_map (gen_env + res_map domain match)
+
+:: ResMapDisj
+strong_disj_use_env
+disj_res_map (internal res map disj)
+sep_res_map (perm_use_env res map disj)
+
+:: ResMapValid
+scope_use_env (perm_use_env in res_map)
+fresh_map_var
+scope_res_map (res_map internal containment + freshness)
+valid_res_map (sub_res_map, scope_res_map)
+~~ spec_scope_use_env (???)
+
+::ResMapRestr
+restr_env (reduces state to rs_map domain)
+
+
+	### red exp lemma
+
+:: ReduceWTS
+mem_value def
+p_state (mem_value gen_env)
+well_typed_list
+valid_use_env (sub_use_env)
+well_typed_mem_value
+non_prim_env
+well_typed_state
+
+well_typed_list/mv lemmas
+wts non_prim_env
+
+:: ReduceExp
+fresh_var
+p_act
+app_red_exp def
+
+
+	### safe reduce lemma
+
+:: SRUseEnv
+red_env
+red_use_env
+
+well_typed red env
+well_typed add perms lemma
+well_typed red perms lemma
+
+:: SafeRedCase
+safe_app_op case
+sacc make act
+safe_app_con case
+
+:: SafeRedLemma
+f_red_exp
+safe_act
+
+safe_act lemmas
+safe app_red_exp lemma
+safe red_exp lemma	
+
+

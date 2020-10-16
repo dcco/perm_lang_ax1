@@ -1,0 +1,360 @@
+theory ProcCVars
+  imports WTLemma ResMapValid
+begin
+
+    (* ##### given a perm set, we derive its "resource completion" by taking all of the resources that are reachable from it.
+        in other words, for each permission z in s, we lookup its resource map, and take all of the resources in it, as well
+        as recursing on each resource. #####
+     *)  
+  
+fun path_lookup where
+  "path_lookup rs_map z Nil x = (z = x)"
+| "path_lookup rs_map z (y # t) x = (case rs_map z of
+    None \<Rightarrow> False
+    | Some r_s \<Rightarrow> r_s y = OwnPerm \<and> path_lookup rs_map y t x
+  )"    
+  (*
+fun path_lookup where
+  "path_lookup rs_map z Nil x = (z = x)"
+| "path_lookup rs_map z (y # t) x = (case lookup_mem rs_map z of
+    None \<Rightarrow> False
+    | Some (r_s, rs_map') \<Rightarrow> r_s y = OwnPerm \<and> path_lookup rs_map' y t x
+  )"*)  
+  
+fun complete_vars where
+  "complete_vars rs_map s = { x | x. \<exists> l z. z \<in> s \<and> path_lookup rs_map z l x}"
+  
+    (* ### path lookup lemmas *)
+  (*
+definition part_valid_entry where
+  "part_valid_entry r_c rs_map = (\<forall> x. r_c x \<noteq> NoPerm \<longrightarrow> leq_use_env (lookup_res rs_map x) r_c)"
+  
+lemma add_part_valid_entry_rev: "\<lbrakk> scope_res_map (add_mem rs_map x r_s);
+  part_valid_entry r_c (add_mem rs_map x r_s) \<rbrakk> \<Longrightarrow> part_valid_entry r_c rs_map"  
+  apply (simp add: part_valid_entry_def)
+  apply (auto)
+  apply (case_tac "lookup_mem rs_map xa = None")
+   apply (simp add: lookup_res_def)
+   apply (rule_tac leq_empty_use_env)
+  apply (auto)
+  apply (case_tac "x = xa")
+   apply (simp add: scope_res_map_def)
+   apply (simp add: add_mem_def)
+   apply (simp add: fresh_map_var_def)
+  apply (erule_tac x="xa" in allE)
+  apply (cut_tac rs_map="rs_map" and r_s="r_s" and x="x" and y="xa" in lookup_add_mem_diff)
+   apply (auto)
+  done
+    
+lemma self_scope_use_env_ih3: "\<lbrakk> scope_res_map rs_map; lookup_mem rs_map x = Some (r_s, rs_map'); lookup_mem rs_map' y = Some (r_x, rs_mapx) \<rbrakk> \<Longrightarrow>
+  lookup_mem rs_map y = Some (r_x, rs_mapx)"    
+  apply (induct rs_map)
+   apply (auto)
+    (* case 1. part 1 *)
+    apply (case_tac "y = x")
+     apply (auto)
+     apply (simp add: scope_res_map_def)
+     apply (simp add: fresh_map_var_def)
+    apply (cut_tac rs_map="rs_map" and x="y" and r_s="x2" in add_scope_res_map_rev)
+     apply (simp add: add_mem_def)
+    apply (simp)
+    apply (simp add: scope_res_map_def)
+    apply (simp add: fresh_map_var_def)
+    (* case 1. part 2 *)
+   apply (case_tac "y = x")
+    apply (auto)
+    apply (simp add: scope_res_map_def)
+    apply (simp add: fresh_map_var_def)
+   apply (cut_tac rs_map="rs_map" and x="y" and r_s="x2" in add_scope_res_map_rev)
+    apply (simp add: add_mem_def)
+   apply (simp)
+   apply (simp add: scope_res_map_def)
+   apply (simp add: fresh_map_var_def)
+    (* case 2. *)
+  apply (case_tac "x1 = x")
+   apply (auto)
+  apply (cut_tac rs_map="rs_map" and x="x1" and r_s="x2" in add_scope_res_map_rev)
+   apply (simp add: add_mem_def)
+  apply (simp)
+  done
+    
+lemma lookup_part_valid_entry: "\<lbrakk> scope_res_map rs_map; part_valid_entry r_c rs_map; lookup_mem rs_map x = Some (r_s, rs_map') \<rbrakk> \<Longrightarrow>
+  part_valid_entry r_c rs_map'"    
+  apply (simp add: part_valid_entry_def)
+  apply (auto)
+  apply (simp add: lookup_res_def)
+  apply (case_tac "lookup_mem rs_map' xa")
+   apply (auto)
+   apply (rule_tac leq_empty_use_env)
+  apply (erule_tac x="xa" in allE)
+  apply (auto)
+  apply (case_tac "lookup_mem rs_map xa")
+   apply (auto)
+   apply (cut_tac rs_map="rs_map" and rs_map'="rs_map'" in self_scope_use_env_ih2)
+     apply (auto)
+   apply (simp add: sub_scope_use_env_def)
+  apply (cut_tac rs_map="rs_map" and x="x" and y="xa" in self_scope_use_env_ih3)
+     apply (auto)
+  done
+
+   
+    
+    (* this lemma states that if we can lookup x from z, then x is present in r_c.
+        (assuming that we start off in r_c).  *)
+lemma path_lookup_own: "\<lbrakk> l \<noteq> Nil; r_c z \<noteq> NoPerm; path_lookup rs_map z l x;
+  scope_res_map rs_map; part_valid_entry r_c rs_map \<rbrakk> \<Longrightarrow> r_c x = OwnPerm"    
+  apply (induct l arbitrary: rs_map z)  
+   apply (auto)
+  apply (case_tac "lookup_mem rs_map z")
+   apply (auto)
+    (* say that a = x (we have reached the end of the lookup) *)
+  apply (case_tac "a = x")
+   apply (auto)
+    (* in this case, r_c x = Own, because aa x = Own *)
+   apply (rule_tac r_x="aa" in leq_use_own)
+    apply (simp)
+    (* to prove aa \<le> r_c, we use valid entry. we just have to show r_c z \<noteq> None *)
+   apply (simp add: part_valid_entry_def)
+   apply (erule_tac x="z" in allE)
+   apply (auto)
+   apply (simp add: lookup_res_def)
+    (* otherwise, we want to induct. *)
+  apply (case_tac "l \<noteq> []")
+   apply (auto)
+  apply (cut_tac rs_map'="b" in self_scope_res_map)
+    apply (auto)
+    (* we have to show that r_c a \<noteq> None, which is true since it is in findable in b, which by valid entry is in r_c *)
+  apply (case_tac "r_c a = NoPerm")
+   apply (cut_tac r_x="lookup_res rs_map z" and r_s="r_c" and x="a" in leq_use_none)
+     apply (simp add: part_valid_entry_def)
+    apply (simp)
+   apply (simp add: lookup_res_def)
+  apply (cut_tac r_c="r_c" and rs_map="rs_map" and rs_map'="b" in lookup_part_valid_entry)
+     apply (auto)
+  done    *)
+ 
+
+    
+lemma path_lookup_parent: "\<lbrakk> l \<noteq> Nil; path_lookup rs_map z l x; valid_nres_map s rs_map \<rbrakk> \<Longrightarrow>
+  (\<exists> l' y r_s. path_lookup rs_map z l' y \<and> rs_map y = Some r_s \<and> r_s x \<noteq> NoPerm )"
+  apply (induct l arbitrary: z)
+   apply (auto)
+  apply (case_tac "rs_map z")
+   apply (auto)
+    (* case where we have reached x *)
+  apply (case_tac "a = x")
+   apply (rule_tac x="Nil" in exI)
+   apply (auto)
+    (* otherwise, induct *)
+  apply (case_tac "l = []")
+   apply (auto)
+  apply (case_tac "\<exists>l' y. path_lookup rs_map a l' y \<and> (\<exists>r_s. rs_map y = Some r_s \<and> r_s x \<noteq> NoPerm)")
+   apply (erule_tac exE)
+   apply (auto)
+  apply (rule_tac x="a # l'" in exI)
+  apply (auto)
+  done  
+  
+  
+  (*
+lemma path_lookup_self: "\<lbrakk> l \<noteq> Nil; path_lookup rs_map z l x; scope_res_map rs_map \<rbrakk> \<Longrightarrow> lookup_mem rs_map x \<noteq> None"
+  apply (induct l arbitrary: z rs_map)
+   apply (auto)
+  apply (case_tac "lookup_mem rs_map z")
+   apply (auto)
+    (* case where we have reached x *)
+  apply (case_tac "a = x")
+   apply (auto)
+   apply (cut_tac rs_map="rs_map" and x="z" and r_s="aa" in self_scope_use_env_ih1)
+     apply (auto)
+   apply (case_tac "lookup_mem b x = None")
+    apply (simp add: scope_use_env_def)
+   apply (auto)
+   apply (cut_tac rs_map="rs_map" and x="z" and rs_map'="b" and y="x" in self_scope_use_env_ih3)
+      apply (auto)
+    (* inductive case *)
+  apply (case_tac "l = []")
+   apply (auto)
+  apply (cut_tac rs_map="rs_map" and rs_map'="b" in self_scope_res_map)
+    apply (auto)
+  apply (case_tac "\<exists>r_s rs_map. lookup_mem b x = Some (r_s, rs_map)")
+   apply (erule_tac exE)
+   apply (erule_tac exE)
+   apply (cut_tac rs_map="rs_map" and rs_map'="b" and x="z" in self_scope_use_env_ih3)
+      apply (auto)
+  done
+    
+lemma path_lookup_parent: "\<lbrakk> l \<noteq> Nil; path_lookup rs_map z l x; scope_res_map rs_map \<rbrakk> \<Longrightarrow>
+  (\<exists> l' y r_s rs_map'. path_lookup rs_map z l' y \<and> lookup_mem rs_map y = Some (r_s, rs_map') \<and> r_s x = OwnPerm )"
+  apply (induct l arbitrary: z rs_map)
+   apply (auto)
+  apply (case_tac "lookup_mem rs_map z")
+   apply (auto)
+    (* case where we have reached x *)
+  apply (case_tac "a = x")
+   apply (rule_tac x="Nil" in exI)
+   apply (auto)
+    (* otherwise, induct *)
+  apply (case_tac "l = []")
+   apply (auto)
+  apply (cut_tac rs_map="rs_map" and rs_map'="b" in self_scope_res_map)
+    apply (auto)
+  apply (case_tac " \<exists>l' y. path_lookup b a l' y \<and> (\<exists>r_s. (\<exists>rs_map'. lookup_mem b y = Some (r_s, rs_map')) \<and> r_s x = OwnPerm)")
+   apply (erule_tac exE)
+   apply (auto)
+  apply (rule_tac x="a # l'" in exI)
+  apply (auto)
+  apply (cut_tac rs_map="rs_map" and rs_map'="b" and x="z" in self_scope_use_env_ih3)
+     apply (auto)
+  done*)  
+  
+    (* #### we use this to define the full dominator *)
+  
+definition dom_use_env where
+  "dom_use_env s = (\<lambda> x. if x \<in> s then OwnPerm else NoPerm)"  
+  
+definition np_dom_use_env where
+  "np_dom_use_env env e = dom_use_env (non_prim_vars env e)"  
+  
+definition full_dom_use_env where
+  "full_dom_use_env env rs_map e = dom_use_env (complete_vars rs_map (non_prim_vars env e))"    
+  
+lemma strong_dom_use_env: "strong_use_env (dom_use_env s)"
+  apply (simp add: strong_use_env_def)
+  apply (simp add: dom_use_env_def)
+  done  
+  
+lemma dist_dom_leq_use_env: "\<lbrakk> s \<subseteq> s' \<rbrakk> \<Longrightarrow> leq_use_env (dom_use_env s) (dom_use_env s')"    
+  apply (simp add: dom_use_env_def)
+  apply (simp add: leq_use_env_def)
+  apply (auto)
+  done
+    
+lemma full_dom_leq_use_env: "leq_use_env (np_dom_use_env env e) (full_dom_use_env env rs_map e)"    
+  apply (simp add: np_dom_use_env_def)
+  apply (simp add: full_dom_use_env_def)
+  apply (rule_tac dist_dom_leq_use_env)
+  apply (auto)
+  apply (rule_tac x="Nil" in exI)
+  apply (auto)
+  done
+  
+lemma wt_np_leq_use_env: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; is_own r \<rbrakk> \<Longrightarrow> leq_use_env (np_dom_use_env env e) (lift_use_env r_s1 r)"    
+  apply (simp add: leq_use_env_def)
+  apply (simp add: np_dom_use_env_def)
+  apply (simp add: dom_use_env_def)
+  apply (auto)
+  apply (simp add: is_own_def)
+  apply (case_tac "r_s1 x = NoPerm")
+   apply (cut_tac env="env" and ?r_s1.0="r_s1" and e="e" and x="x" in well_typed_no_npv_use)
+     apply (auto)
+  done
+    
+(*
+lemma full_dom_sub_use_env: "\<lbrakk> scope_res_map rs_map; sub_res_map s rs_map; sub_env s env \<rbrakk> \<Longrightarrow> sub_use_env s (full_dom_use_env env rs_map e)"    
+  apply (simp add: full_dom_use_env_def)
+  apply (simp add: sub_use_env_def)
+  apply (simp add: dom_use_env_def)
+  apply (auto)
+  apply (case_tac "z = x")
+   apply (simp add: non_prim_vars_def)
+   apply (simp add: non_prim_entry_def)
+   apply (simp add: sub_env_def)
+   apply (auto)
+  apply (cut_tac rs_map="rs_map" and x="x" in path_lookup_self)
+     apply (auto)
+  apply (simp add: sub_res_map_def)
+  apply (erule_tac x="x" in allE)
+  apply (auto)
+  done
+    
+lemma path_lookup_scope: "\<lbrakk> scope_res_map rs_map; lookup_mem rs_map a = Some (r_s, rs_map');
+  path_lookup rs_map' z l x \<rbrakk> \<Longrightarrow> path_lookup rs_map z l x"    
+  apply (induct l arbitrary: z)
+   apply (auto)
+  apply (case_tac "lookup_mem rs_map' z")
+   apply (auto)
+  apply (cut_tac rs_map="rs_map" and rs_map'="rs_map'" and x="a" in self_scope_use_env_ih3)
+     apply (auto)
+  done
+
+    
+    (* in theory this is true because if x could lookup to itself, it would create a cycle. *)
+lemma path_lookup_nil: "\<lbrakk> scope_res_map rs_map; path_lookup rs_map x l x \<rbrakk> \<Longrightarrow> l = []"  
+  apply (case_tac l)
+   apply (auto)
+  apply (case_tac "lookup_mem rs_map x")
+   apply (auto)
+    (* the idea is that since rs_map is correctly scoped, b cannot contain x *)
+  apply (cut_tac rs_map="rs_map" and rs_map'="b" and x="x" in scope_res_map_fresh_lookup)
+    apply (auto)
+    (* if the path from a to x is empty, x is in aa (r_s), which is problematic by sub-scoping *)
+  apply (case_tac "list = []")
+   apply (auto)
+   apply (cut_tac rs_map="rs_map" and x="x" in self_scope_use_env_ih1)
+     apply (auto)
+   apply (simp add: fresh_map_var_def)
+   apply (simp add: scope_use_env_def)
+    (* otherwise we can do the same thing by path lookup *)
+  apply (cut_tac rs_map="b" and l="list" and x="x" in path_lookup_self)
+     apply (auto)
+   apply (rule_tac rs_map="rs_map" and x="x" in self_scope_res_map)
+    apply (auto)
+  apply (simp add: fresh_map_var_def)
+  done
+    
+lemma path_lookup_ext: "\<lbrakk> scope_res_map rs_map; path_lookup rs_map z l x; lookup_mem rs_map x = Some (r_s, rs_map'); r_s y = OwnPerm \<rbrakk> \<Longrightarrow>
+  path_lookup rs_map z (l @ [y]) y"
+  apply (induct l arbitrary: z rs_map)
+   apply (auto)
+  apply (case_tac "lookup_mem rs_map z")
+   apply (auto)
+    (* our goal is to show that looking up x in b is the same as looking it up in z. say that a = x *)
+  apply (case_tac "a = x")
+   apply (auto)
+    (* we know that they are connected by an empty list *)
+   apply (cut_tac l="l" and x="x" in path_lookup_nil)
+     apply (auto)
+    apply (rule_tac self_scope_res_map)
+     apply (auto)
+    (* by sub-scoping, this means that x must have a lookup *)
+   apply (cut_tac rs_map="rs_map" and x="z" in self_scope_use_env_ih1)
+     apply (auto)
+   apply (case_tac "lookup_mem b x")
+    apply (simp add: scope_use_env_def)
+   apply (auto)
+    (* we can then use lookup-sameness to confirm the result *)
+   apply (cut_tac rs_map="rs_map" and x="z" and rs_map'="b" and y="x" in self_scope_use_env_ih3)
+      apply (auto)
+    (* otherwise, we can use self lookup to find a lookup for x in b *)
+  apply (cut_tac rs_map="b" and l="l" and x="x" in path_lookup_self)
+     apply (auto)
+   apply (rule_tac self_scope_res_map)
+    apply (auto)
+    (* we can use lookup-sameness to continue inducting *)
+  apply (cut_tac rs_map="rs_map" and x="z" and rs_map'="b" and y="x" in self_scope_use_env_ih3)
+     apply (auto)
+  apply (cut_tac rs_map="rs_map" and x="z" and rs_map'="b" in self_scope_res_map)
+    apply (auto)
+  done*)
+    
+  (*
+    (* the idea behind this lemma if x is in the completion and y is its child, y is in the completion as well. *)
+lemma full_dom_recall: "\<lbrakk> scope_res_map rs_map; full_dom_use_env env rs_map e x \<noteq> NoPerm; lookup_res rs_map x y = OwnPerm \<rbrakk> \<Longrightarrow>
+  full_dom_use_env env rs_map e y \<noteq> NoPerm"
+  apply (simp add: full_dom_use_env_def)
+  apply (simp add: dom_use_env_def)
+  apply (case_tac "\<exists>l z. z \<in> non_prim_vars env e \<and> path_lookup rs_map z l x")
+   apply (auto)
+  apply (rule_tac x="l @ [y]" in exI)
+  apply (rule_tac x="z" in exI)
+  apply (auto)
+  apply (simp add: lookup_res_def)
+  apply (case_tac "lookup_mem rs_map x")
+   apply (auto)
+   apply (simp add: empty_use_env_def)
+  apply (rule_tac x="x" and r_s="a" in path_lookup_ext)
+     apply (auto)
+  done    *)
+ 
+end

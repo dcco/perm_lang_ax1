@@ -1,0 +1,205 @@
+
+:: ProcType
+perm def
+aff def [one-liner]
+type def
+unlim
+gen_env def
+pt_env
+
+gen_env lemmas
+
+:: PermEnv
+perm_use_env def
+prim_type
+lift_use_env
+safe_use_lift
+mini_disj def
+weak def
+is_own
+
+indy perm lemmas
+
+:: NormEnv
+norm_use_env (reduces r_x to domain of r_s)
+
+norm leq/disj lemmas
+
+:: PermEnvEq
+main equality lemmas
+
+:: PermEnvLeq
+main ordering lemmas
+disjointness ordering lemmas
+unroll/fold lemmas
+
+:: PermEnvMisc
+lift safety lemmas
+semi-disjointness lemmas
+main disjointness lemmas
+weakness lemmas
+
+:: WTBreak
+complete_use_env (lifts r_x to r_s)
+strong_use_env
+
+completeness lemmas
+ex_complete_use_env (a completed env can be turned into a difference)
+
+:: ProcLangX
+expression def
+is_value / is_sexp
+free_vars
+lam_vars
+subst_exp
+renaming defs
+var list defs
+env_vars
+safe_subst_exp
+mem_value def
+array funs + ext_list
+p_state (mem_value gen_env)
+p_stack / res_map def
+fresh_var
+p_act
+app_red_exp def
+~~ aff_value / name_set
+pure_fun
+~~ impure_fun
+is_unique
+take_fun
+fun_ty
+const / op types
+aff_use_env
+var_value_type
+req_use_env def
+app_req
+safe_type
+well_typed def
+
+:: StateEnv
+cut_use_env (removes all uses)
+sub_env (gen_env containment)
+sub_use_env (perm_use_env in gen_env)
+strong_disj_use_env
+lookup_res
+disj_res_map (internal res map disj)
+sep_res_map (perm_use_env res map disj)
+compl_res_map (gen_env + res_map domain match)
+scope_use_env (perm_use_env in res_map)
+fresh_map_var
+scope_res_map (res_map internal containment + freshness)
+valid_res_map (compl_res_map, scope_res_map)
+valid_use_env (sub_use_env)
+intro / elim use_env
+red_env
+red_use_env
+
+cut (leq/strong) lemmas
+sub_env lemmas
+sub_use_env lemmas
+p_stack indy lemmas
+compl_res_map lemmas
+scope_use_env lemmas
+scope_res_map usage + normal lemmas
+sep_res_map lemmas
+disj_res_map lemmas
+elim lemmas
+~~ intro lemmas
+
+:: WTLemma
+req_use_env lemmas
+affine_env lemmas
+basic sexp lemmas
+well_typed perm lemmas
+well_typed fv lemmas
+well_typed env lemmas
+well_typed use_env lemmas
+no fv subst_type_preserve
+
+:: DropEnv
+drop_use_env (reduces to all use)
+drop_use_env_ex
+
+drop lemmas
+wt_sexp drop lemma
+wt_sexp drop_all lemma
+wt_sexp drop_all_ex lemma
+
+:: InflLemma
+infl_use_env (difference infer)
+
+infl lemmas
+'msum_diff_comp_use_env'
+sexp flat perm lemma
+general sexp flat perm lemma
+
+:: RenameLemma
+rename_use_env
+
+rename lemmas
+alpha_rename type preservation
+lam_var_remove type preservation
+lam_var_list remove type preservation
+
+:: SExpLemma
+og flat perm lemma
+
+:: SPComp
+end_neg_use_env (subtracts r_x conditionally)
+stpx_req (includes perms from rx2 conditionally)
+
+end_neg lemmas
+stpx_req lemmas
+well_typed stpx_req lemma
+substitution type preservation lemma
+
+:: SubProof
+super_norm_use_env (related to infl_use_env, reduces r_x to ownership r_s)
+
+substitution type application lemma
+stray lam var / rename lemmas
+norm lemmas
+well_typed norm lemma
+snorm lemmas
+well_typed snorm lemma
+well_typed end_perm lower bound lemma
+safe substitution type preservation lemma
+
+:: WTState
+well_typed_list
+~~ aff_pair
+well_typed_mem_value
+well_typed_state
+non_prim_env
+restr_env (reduces state to rs_map domain)
+contain_env (precise gen_env containment)
+spec_scope_use_env ()
+
+well_typed_list/mv lemmas
+wts non_prim_env
+safe_app_op case
+sacc make act
+safe_app_con case
+restr_env validity lemmas
+contain_env lemmas
+well_typed restr lemmas (env can be restricted to a valid rs_map)
+~~ aff_pair lemmas
+~~ idk lol a bunch of lemmas
+
+:: RedProof
+~~ res_use_env (ownership from set)
+f_red_exp
+safe_act
+
+'lease' lemmas
+safe app_red_exp lemma
+well_typed red env
+safe_act lemmas
+disj infl lemmas
+well_typed add perms lemma
+well_typed red perms lemma
+well_typed contain_env
+red_use_env lemmas
+safe red_exp lemma
+
