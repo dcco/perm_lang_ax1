@@ -25,6 +25,8 @@ begin
   
 datatype mem_value =
   ArrValue "p_exp list"
+  | ChanSValue
+  | ChanRValue string
     (* true if unique, false otherwise *)
   (*| PairValue p_exp p_exp*) (*p_aff*)  
   
@@ -62,6 +64,7 @@ datatype p_act =
   NoAct
     (* - new resource, ##resources consumed to create the resource *)
   | MakeAct string (*"string set"*)
+  | Mk2Act string string
     (* - resource used, ##resources transferred to the resource *)
   | UseAct string (*"string set"*)
   
@@ -73,7 +76,11 @@ fun ext_list where
 fun app_con :: "p_state \<Rightarrow> p_const \<Rightarrow> p_exp \<Rightarrow> p_act \<Rightarrow> p_state \<times> p_exp \<Rightarrow> bool" where
   "app_con s EmptyArrayConst v ax (s', e') = (\<exists> a. ax = MakeAct a \<and> v = ConstExp UnitConst \<and>
     e' = VarExp a SelfRef \<and> s' = add_env s a (ArrValue []) \<and> fresh_var s a
-  )"(*
+  )"
+| "app_con s NewChanConst v ax (s', e') = (\<exists> c_s c_r. ax = Mk2Act c_s c_r \<and> v = ConstExp UnitConst \<and>
+    e' = (PairExp (VarExp c_s SelfRef) (VarExp c_r SelfRef)) \<and> s' = add_env (add_env s c_s ChanSValue) c_r (ChanRValue c_s) \<and>
+    fresh_var s c_s \<and> fresh_var s c_r \<and> c_s \<noteq> c_r)"
+(*
 | "app_con s ReadConst e ax (s', e') = (\<exists> x a i v arr. ax = UseAct x \<and> ack_full_exp x v e' \<and>
     e = PairExp (VarExp x a) (ConstExp (IConst i)) \<and>
     s (deref_name x a) = Some (ArrValue arr) \<and> read_array arr i = Some v \<and> s' = s
@@ -110,6 +117,7 @@ fun app_cv :: "p_state \<Rightarrow> p_const \<Rightarrow> p_exp \<Rightarrow> p
     e' = unit_exp \<and> s' = add_env s (deref_name x a) (ArrValue arr'))"
 | "app_cv s UnpackConst f p ax (s', e') = (\<exists> v1 v2. v1 = f \<and> p = PairExp v1 v2 \<and>
     ax = NoAct \<and> s' = s \<and> e' = AppExp (AppExp f v1) v2)"
+
 | "app_cv s c v1 v2 ax (s', e') = False"  
   
   

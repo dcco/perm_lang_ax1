@@ -1,5 +1,5 @@
 theory SafeRedCase
-  imports WTLemma ReduceRestrX ReduceWTS SRUseEnv
+  imports WTLemma ReduceRestrX ReduceWTS SRUseEnv SafeRedUnpack
 begin 
   
   (* ###### case lemmas *)    
@@ -524,22 +524,20 @@ lemma saccmk2_pair_type: "\<lbrakk> well_typed env (one_use_env x1 OwnPerm) v1 t
    apply (simp)
   apply (rule_tac x="one_use_env x2 OwnPerm" in exI)
   apply (auto)
-         apply (rule_tac r_s="one_use_env x2 OwnPerm" in well_typed_incr_simul_perm)
-            apply (simp add: leq_use_env_def)
-            apply (simp add: one_use_env_def)
-           apply (simp)
-          apply (simp add: is_own_def)
-         apply (simp add: leq_use_env_def)
-         apply (simp add: one_use_env_def)
-         apply (simp add: is_own_def)
+       apply (rule_tac r_s="one_use_env x2 OwnPerm" in well_typed_incr_simul_perm)
         apply (simp add: leq_use_env_def)
         apply (simp add: one_use_env_def)
-        apply (simp add: is_own_def)
-       apply (simp add: is_own_def)(*
+       apply (simp)
       apply (simp add: is_own_def)
+      apply (simp add: leq_use_env_def)
+      apply (simp add: one_use_env_def)
      apply (simp add: is_own_def)
+     apply (simp add: leq_use_env_def)
+     apply (simp add: one_use_env_def)
     apply (simp add: is_own_def)
-   apply (simp add: is_own_def)*)
+    apply (case_tac "max_aff (req_type t1) (req_type t2)")
+      apply (auto)
+   apply (simp add: is_own_def)
    apply (simp add: one_use_env_def)
    apply (simp add: disj_use_env_def)
    apply (simp add: mini_disj_use_env_def)
@@ -557,14 +555,14 @@ lemma saccmk2_pair_type: "\<lbrakk> well_typed env (one_use_env x1 OwnPerm) v1 t
    apply (auto)
   apply (simp add: pair_req_def)
   apply (auto)
-    apply (simp add: leq_use_env_def)
-    apply (simp add: add_use_env_def)
-    apply (simp add: diff_use_env_def)
-    apply (simp add: comp_use_env_def)
-    apply (simp add: minus_use_env_def)
-    apply (simp add: neg_use_env_def)
-    apply (simp add: one_use_env_def)
-   apply (simp add: is_own_def)
+   apply (rule_tac leq_empty_use_env)
+  apply (simp add: leq_use_env_def)
+  apply (simp add: add_use_env_def)
+  apply (simp add: diff_use_env_def)
+  apply (simp add: comp_use_env_def)
+  apply (simp add: minus_use_env_def)
+  apply (simp add: neg_use_env_def)
+  apply (simp add: one_use_env_def)
   apply (simp add: is_own_def)
   done
     
@@ -739,7 +737,7 @@ lemma safe_app_con_case: "\<lbrakk> well_typed_state s1 env rs_map;
     app_red_exp ConstApp (s1, AppExp (ConstExp c) v) ax (s2, e2); valid_exp_use_env s1 rs_map r_f;
     well_typed env r_s1 v t1 r_s2 rx2; proper_exp rs_map (AppExp (ConstExp c) v);
     leq_use_env r_s3 (diff_use_env r_s2 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex));
-    leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s2; leq_use_env r_ex r_s1;
+    leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s2; leq_use_env r_ex r_s1; disj_use_env rx1 (lift_use_env rx2 r);
     leq_use_env rx r_s3; leq_use_env (app_req rx1 rx2 r t2 r_ex) rx; leq_use_env r_s1 r_f;
     FunTy t1 t2 r a \<in> const_type c; c \<noteq> FixConst\<rbrakk>
        \<Longrightarrow> \<exists>g_ax . well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) e2 t2 (end_red_use_env r_s3 g_ax) (end_red_use_env rx g_ax) \<and>
@@ -748,8 +746,30 @@ lemma safe_app_con_case: "\<lbrakk> well_typed_state s1 env rs_map;
   apply (case_tac ax)
      apply (auto)
     (* no action cases *)
+     apply (cut_tac ?r_s2.0="r_s2" and ?r_s1.0="r_s1" and env="env" in well_typed_perm_leq)
+      apply (auto)
      apply (case_tac c)
                  apply (auto)
+     apply (rule_tac sares_unpack_case)
+                apply (auto)
+     apply (simp add: upc_init_abbrev_def)
+     apply (rule_tac x="r_s1" in exI)
+     apply (auto)
+      apply (rule_tac id_leq_use_env)
+     apply (rule_tac x="rx1" in exI)
+     apply (auto)
+      apply (rule_tac r_sb="r_s2" in trans_leq_use_env)
+       apply (simp)
+      apply (rule_tac r_sb="comp_use_env rx1 (lift_use_env rx2 r)" in trans_leq_use_env)
+       apply (simp)
+      apply (rule_tac self_comp_leq_use_env1)
+     apply (rule_tac x="rx2" in exI)
+     apply (rule_tac x="r_s2" in exI)
+     apply (auto)
+     apply (rule_tac x="r_s2a" in exI)
+     apply (rule_tac x="r_s3a" in exI)
+     apply (rule_tac x="rx1a" in exI)
+     apply (auto)
     (* new resource cases. in all cases t2 should be the correct type to add *)
     apply (rule_tac x="AddResAct x2 t2 empty_use_env" in exI)
     apply (auto)

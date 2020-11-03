@@ -252,7 +252,6 @@ lemma well_typed_sstr_end_perm: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx \<r
   apply (rule_tac x="r" in exI)
   apply (rule_tac x="a" in exI)
   apply (rule_tac x="super_norm_use_env r_s1 r_s2a" in exI)
-  apply (auto)
   apply (rule_tac x="rx1" in exI)
   apply (auto)
   apply (rule_tac x="rx2" in exI)

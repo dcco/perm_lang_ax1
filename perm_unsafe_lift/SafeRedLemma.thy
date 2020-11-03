@@ -282,7 +282,22 @@ lemma red_proper_exp: "\<lbrakk> safe_act s r_f g_ax; valid_nres_map s rs_map; p
   apply (rule_tac self_comp_leq_use_env1)
   done
 
-lemma gsre_lhs_app_case: " \<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
+lemma gsre_lac_coerce: "\<lbrakk> \<And>env r_s1 e1 tau r_s2 rx e2.
+           \<lbrakk>well_typed env r_s1 (app_hole h e1) tau r_s2 rx; proper_exp rs_map (app_hole h e1); well_typed_state s1 env rs_map; r_exp are (s1, e1) ax (s2, e2);
+            leq_use_env r_s1 r_f\<rbrakk>
+           \<Longrightarrow> \<exists>g_ax. well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) (app_hole h e2) tau (end_red_use_env r_s2 g_ax) (end_red_use_env rx g_ax) \<and>
+                      proper_exp (red_nres_map rs_map g_ax) (app_hole h e2) \<and>
+                      well_typed_state s2 (red_env env g_ax) (red_nres_map rs_map g_ax) \<and>
+                      valid_exp_use_env s2 (red_nres_map rs_map g_ax) (exp_red_use_env r_f g_ax) \<and> safe_act s1 (infl_use_env r_f r_s2) g_ax \<and> corr_act ax g_ax;
+    well_typed env r_s1 (app_hole h e1) tau r_s2 rx; proper_exp rs_map (app_hole h e1); well_typed_state s1 env rs_map; r_exp are (s1, e1) ax (s2, e2);
+            leq_use_env r_s1 r_f \<rbrakk> \<Longrightarrow> \<exists>g_ax. well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) (app_hole h e2) tau (end_red_use_env r_s2 g_ax) (end_red_use_env rx g_ax) \<and>
+                      proper_exp (red_nres_map rs_map g_ax) (app_hole h e2) \<and>
+                      well_typed_state s2 (red_env env g_ax) (red_nres_map rs_map g_ax) \<and>
+                      valid_exp_use_env s2 (red_nres_map rs_map g_ax) (exp_red_use_env r_f g_ax) \<and> safe_act s1 (infl_use_env r_f r_s2) g_ax \<and> corr_act ax g_ax"    
+  apply (auto)
+  done
+    
+lemma gsre_lhs_app_case: "\<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
            \<lbrakk>well_typed env r_s1 (app_hole h e1) tau r_s2 rx; proper_exp rs_map (app_hole h e1); well_typed_state s1 env rs_map; r_exp are (s1, e1) ax (s2, e2);
             leq_use_env r_s1 r_f\<rbrakk>
            \<Longrightarrow> \<exists>g_ax. well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) (app_hole h e2) tau (end_red_use_env r_s2 g_ax) (end_red_use_env rx g_ax) \<and>
@@ -292,14 +307,14 @@ lemma gsre_lhs_app_case: " \<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
         proper_exp rs_map (AppExp (app_hole h e1) x2); well_typed_state s1 env rs_map; valid_exp_use_env s1 rs_map r_f; wf_hole h;
         r_exp are (s1, e1) ax (s2, e2); valid_reduct r_exp; leq_use_env r_s1 r_f; well_typed env r_s1 (app_hole h e1) (FunTy t1 tau r a) r_s2a rx1;
         well_typed env r_s2a x2 t1 r_s3 rx2; leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex));
-        r \<noteq> NoPerm; (*safe_use_lift rx2 r; safe_type t1 r;*) leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; disj_use_env rx1 (lift_use_env rx2 r);
+        (*safe_use_lift rx2 r; safe_type t1 r;*) leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; disj_use_env rx1 (lift_use_env rx2 r);
         leq_use_env rx r_s2; leq_use_env r_ex r_s1; leq_use_env (app_req rx1 rx2 r tau r_ex) rx\<rbrakk>
        \<Longrightarrow> \<exists>g_ax. (\<exists>t1 r a r_s2a rx1.
                       well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) (app_hole h e2) (FunTy t1 tau r a) r_s2a rx1 \<and>
                       (\<exists>rx2 r_s3.
                           well_typed (red_env env g_ax) r_s2a x2 t1 r_s3 rx2 \<and>
                           (\<exists>r_ex. leq_use_env (end_red_use_env r_s2 g_ax) (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)) \<and>
-                                  r \<noteq> NoPerm \<and> (*safe_use_lift rx2 r \<and>
+                                 (*safe_use_lift rx2 r \<and>
                                   safe_type t1 r \<and>*)
                                   leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3 \<and>
                                   disj_use_env rx1 (lift_use_env rx2 r) \<and>
@@ -308,84 +323,75 @@ lemma gsre_lhs_app_case: " \<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
                   proper_exp (red_nres_map rs_map g_ax) (AppExp (app_hole h e2) x2) \<and>
                   well_typed_state s2 (red_env env g_ax) (red_nres_map rs_map g_ax) \<and>
                   valid_exp_use_env s2 (red_nres_map rs_map g_ax) (exp_red_use_env r_f g_ax) \<and> safe_act s1 (infl_use_env r_f r_s2) g_ax \<and> corr_act ax g_ax"    
-
-       apply (case_tac "\<exists>g_ax. well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) (app_hole h e2) (FunTy t1 tau r a) (end_red_use_env r_s2a g_ax) (end_red_use_env rx1 g_ax) \<and>
-        proper_exp (red_nres_map rs_map g_ax) (app_hole h e2) \<and> well_typed_state s2 (red_env env g_ax) (red_nres_map rs_map g_ax) \<and>
-        valid_exp_use_env s2 (red_nres_map rs_map g_ax) (exp_red_use_env r_f g_ax) \<and> safe_act s1 (infl_use_env r_f r_s2a) g_ax \<and> corr_act ax g_ax")
-        apply (erule_tac exE)
-        apply (rule_tac x="g_ax" in exI)
+  apply (cut_tac env="env" and ?r_s1.0="r_s1" and ?e1.0="e1" and ?e2.0="e2" and tau="FunTy t1 tau r a" and ?r_s2.0="r_s2a" and
+      r_f="r_f" and rs_map="rs_map" and ?s2.0="s2" and ax="ax" and r_exp="r_exp" in gsre_lac_coerce)
         apply (auto)
-        apply (rule_tac x="t1" in exI)
-        apply (rule_tac x="r" in exI)
-        apply (rule_tac x="a" in exI)
-        apply (rule_tac x="end_red_use_env r_s2a g_ax" in exI)
-        apply (rule_tac x="end_red_use_env rx1 g_ax" in exI)
-        apply (auto)
-    (* - typing e2 *)
-        apply (rule_tac x="end_red_use_env rx2 g_ax" in exI)
-        apply (rule_tac x="end_red_use_env r_s3 g_ax" in exI)
-        apply (auto)
-         apply (rule_tac env'="env" in well_typed_contain_env)
-          apply (rule_tac s="s1" in red_contain_env)
-           apply (simp)
-          apply (simp add: well_typed_state_def)
-         apply (rule_tac r_f="r_f" in well_typed_end_red_perms)
-           apply (auto)
-         apply (rule_tac r_sb="r_s1" in trans_leq_use_env)
-          apply (simp)
-         apply (rule_tac well_typed_perm_leq)
-         apply (auto)
-    (* - bounds *)
-        apply (simp add: lift_end_red_use_env)
-        apply (simp add: comp_end_red_use_env)
-        apply (rule_tac x="end_red_use_env r_ex g_ax" in exI)
-        apply (auto)
-              apply (simp add: comp_end_red_use_env)
-              apply (simp add: diff_end_red_use_env)
-              apply (rule_tac dist_end_red_leq_use_env)
-              apply (simp)(*
-             apply (rule_tac r_s="rx2" in safe_lift_leq_use_env)
-              apply (rule_tac self_end_red_leq_use_env)
-             apply (simp)*)
-            apply (rule_tac dist_end_red_leq_use_env)
-            apply (simp)
-           apply (rule_tac r_s="rx1" in disj_leq_use_env1)
-            apply (rule_tac r_s="lift_use_env rx2 r" in disj_leq_use_env2)
-             apply (simp)
-            apply (rule_tac self_end_red_leq_use_env)
-           apply (rule_tac self_end_red_leq_use_env)
-          apply (rule_tac dist_end_red_leq_use_env)
-          apply (simp)
-         apply (rule_tac exp_red_leq_use_env)
-         apply (simp)
-        apply (simp add: app_req_def)
-        apply (auto)
-         apply (rule_tac leq_empty_use_env)
-        apply (simp add: lift_end_red_use_env)
-        apply (simp add: comp_end_red_use_env)
-        apply (simp add: diff_end_red_use_env)
-        apply (rule_tac dist_end_red_leq_use_env)
-     apply (simp)
-    (* properness *)
-    apply (cut_tac rs_map="rs_map" and g_ax="g_ax" and e="x2" and s="s1" in red_proper_exp)
-      apply (auto)
-      apply (simp add: well_typed_state_def)
-     apply (simp add: proper_exp_def)
-    apply (simp add: proper_exp_def)
-    (* action safety / correspondence *)
-       apply (rule_tac r_x="infl_use_env r_f r_s2a" in leq_safe_act)
-        apply (simp)
-       apply (rule_tac dist_infl_leq_use_env)
-        apply (rule_tac id_leq_use_env)
-       apply (rule_tac r_sb="diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)" in trans_leq_use_env)
-        apply (rule_tac diff_leq_use_env)
-        apply (rule_tac well_typed_perm_leq)
-    apply (auto)
-    (* induction *)
-  apply (case_tac "\<not> proper_exp rs_map (app_hole h e1)")
    apply (simp add: proper_exp_def)
+  apply (rule_tac x="g_ax" in exI)
   apply (auto)
-  apply (iprover)
+    apply (rule_tac x="t1" in exI)
+    apply (rule_tac x="r" in exI)
+    apply (rule_tac x="a" in exI)
+    apply (rule_tac x="end_red_use_env r_s2a g_ax" in exI)
+    apply (rule_tac x="end_red_use_env rx1 g_ax" in exI)
+    apply (auto)
+    (* - typing e2 *)
+    apply (rule_tac x="end_red_use_env rx2 g_ax" in exI)
+    apply (rule_tac x="end_red_use_env r_s3 g_ax" in exI)
+    apply (auto)
+     apply (rule_tac env'="env" in well_typed_contain_env)
+      apply (rule_tac s="s1" in red_contain_env)
+       apply (simp)
+      apply (simp add: well_typed_state_def)
+     apply (rule_tac r_f="r_f" in well_typed_end_red_perms)
+       apply (auto)
+     apply (rule_tac r_sb="r_s1" in trans_leq_use_env)
+      apply (simp)
+     apply (rule_tac well_typed_perm_leq)
+     apply (auto)
+    (* - bounds *)
+    apply (simp add: lift_end_red_use_env)
+    apply (simp add: comp_end_red_use_env)
+    apply (rule_tac x="end_red_use_env r_ex g_ax" in exI)
+    apply (auto)
+         apply (simp add: comp_end_red_use_env)
+         apply (simp add: diff_end_red_use_env)
+         apply (rule_tac dist_end_red_leq_use_env)
+         apply (simp)
+        apply (rule_tac dist_end_red_leq_use_env)
+        apply (simp)
+       apply (rule_tac r_s="rx1" in disj_leq_use_env1)
+        apply (rule_tac r_s="lift_use_env rx2 r" in disj_leq_use_env2)
+         apply (simp)
+        apply (rule_tac self_end_red_leq_use_env)
+       apply (rule_tac self_end_red_leq_use_env)
+      apply (rule_tac dist_end_red_leq_use_env)
+      apply (simp)
+     apply (rule_tac exp_red_leq_use_env)
+     apply (simp)
+    apply (simp add: app_req_def)
+    apply (auto)
+     apply (rule_tac leq_empty_use_env)
+    apply (simp add: lift_end_red_use_env)
+    apply (simp add: comp_end_red_use_env)
+    apply (simp add: diff_end_red_use_env)
+    apply (rule_tac dist_end_red_leq_use_env)
+    apply (simp)
+    (* properness *)
+   apply (cut_tac rs_map="rs_map" and g_ax="g_ax" and e="x2" and s="s1" in red_proper_exp)
+      apply (auto)
+     apply (simp add: well_typed_state_def)
+    apply (simp add: proper_exp_def)
+   apply (simp add: proper_exp_def)
+    (* action safety / correspondence *)
+  apply (rule_tac r_x="infl_use_env r_f r_s2a" in leq_safe_act)
+   apply (simp)
+  apply (rule_tac dist_infl_leq_use_env)
+   apply (rule_tac id_leq_use_env)
+  apply (rule_tac r_sb="diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)" in trans_leq_use_env)
+   apply (rule_tac diff_leq_use_env)
+   apply (rule_tac well_typed_perm_leq)
+   apply (auto)
   done    
   
 lemma gsre_rhs_app_case: "\<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
@@ -398,7 +404,6 @@ lemma gsre_rhs_app_case: "\<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
         proper_exp rs_map (AppExp x1 (app_hole h e1)); well_typed_state s1 env rs_map; valid_exp_use_env s1 rs_map r_f; r_exp are (s1, e1) ax (s2, e2);
         valid_reduct r_exp; leq_use_env r_s1 r_f; is_value x1; wf_hole h; well_typed env r_s1 x1 (FunTy t1 tau r a) r_s2a rx1;
         well_typed env r_s2a (app_hole h e1) t1 r_s3 rx2; leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex));
-        r \<noteq> NoPerm;
         (*safe_use_lift rx2 r; safe_type t1 r;*) leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; disj_use_env rx1 (lift_use_env rx2 r);
         leq_use_env rx r_s2; leq_use_env r_ex r_s1; leq_use_env (app_req rx1 rx2 r tau r_ex) rx\<rbrakk>
        \<Longrightarrow> \<exists>g_ax. (\<exists>t1 r a r_s2a rx1.
@@ -406,7 +411,7 @@ lemma gsre_rhs_app_case: "\<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
                       (\<exists>rx2 r_s3.
                           well_typed (red_env env g_ax) r_s2a (app_hole h e2) t1 r_s3 rx2 \<and>
                           (\<exists>r_ex. leq_use_env (end_red_use_env r_s2 g_ax) (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)) \<and>
-                                  r \<noteq> NoPerm \<and> (*safe_use_lift rx2 r \<and>
+                                  (*safe_use_lift rx2 r \<and>
                                   safe_type t1 r \<and>*)
                                   leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3 \<and>
                                   disj_use_env rx1 (lift_use_env rx2 r) \<and>
@@ -605,8 +610,8 @@ lemma gsre_rhs_pair_case: "\<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
                       valid_exp_use_env s2 (red_nres_map rs_map g_ax) (exp_red_use_env r_f g_ax) \<and> safe_act s1 (infl_use_env r_f r_s2) g_ax \<and> corr_act ax g_ax;
         proper_exp rs_map (PairExp x1 (app_hole h e1)); well_typed_state s1 env rs_map; valid_exp_use_env s1 rs_map r_f; r_exp are (s1, e1) ax (s2, e2);
         valid_reduct r_exp; leq_use_env r_s1 r_f; is_value x1;
-        wf_hole h; well_typed env r_s1 x1 t1 r_s2a rx1; well_typed env r_s2a (app_hole h e1) t2 r_s3 rx2; r \<noteq> NoPerm; leq_use_env (lift_use_env rx1 r) r_s3;
-        leq_use_env (lift_use_env rx2 r) r_s3; r \<noteq> NoPerm; (* safe_use_lift rx1 r; safe_use_lift rx2 r; safe_type t1 r; safe_type t2 r;*)
+        wf_hole h; well_typed env r_s1 x1 t1 r_s2a rx1; well_typed env r_s2a (app_hole h e1) t2 r_s3 rx2; leq_use_env (lift_use_env rx1 r) r_s3;
+        leq_use_env (lift_use_env rx2 r) r_s3; (* r \<noteq> NoPerm; safe_use_lift rx1 r; safe_use_lift rx2 r; safe_type t1 r; safe_type t2 r;*)
         disj_use_env (lift_use_env rx1 r) (lift_use_env rx2 r); leq_use_env r_s2 (diff_use_env r_s3 r_ex); leq_use_env rx r_s2; leq_use_env r_ex r_s1;
         leq_use_env (pair_req (comp_use_env (lift_use_env rx1 r) (lift_use_env rx2 r)) r_ex (PairTy t1 t2 r)) rx\<rbrakk>
        \<Longrightarrow> \<exists>g_ax. (\<exists>r_s2a r_s3 rx1.
@@ -859,24 +864,7 @@ lemma gsre_cv_case: " \<lbrakk>\<And>env r_s1 e1 tau r_s2 rx e2.
    apply (auto)*)
     
     
-    
-lemma well_typed_add_perms: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; x \<notin> non_prim_vars env e; r = OwnPerm; rx x = NoPerm \<rbrakk> \<Longrightarrow>
-  well_typed env (add_use_env r_s1 x r) e tau (add_use_env r_s2 x r) rx"
-  apply (cut_tac r_s="r_s1" and x="x" and r="r" in partial_add_rem_use_env)
-  apply (cut_tac r_s="r_s2" and x="x" and r="r" in partial_add_rem_use_env)
-  apply (cut_tac r_s="rx" and x="x" in ignore_rem_use_env)
-   apply (simp)
-  apply (cut_tac r_s="rem_use_env r_s1 x" and x="x" and r="r" in add_comp_use_env)
-   apply (auto)
-  apply (cut_tac r_s="rem_use_env r_s2 x" and x="x" and r="r" in add_comp_use_env)
-    apply (auto)
-  apply (rule_tac well_typed_comp_perms)
-   apply (cut_tac env="env" and ?r_s1.0="r_s1" and e="e" and tau="tau" and ?r_s2.0="r_s2" and rx="rx" and x="x" in well_typed_rem_perms)
-     apply (auto)
-  apply (rule_tac disj_one_use_env)
-  apply (simp add: rem_use_env_def)
-  done    
-    
+
 lemma well_typed_exp_red_perms: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; safe_act s (infl_use_env r_f r_s1) g_ax;
   leq_use_env r_s1 r_f; sub_env s env; sub_use_env s r_s1 \<rbrakk> \<Longrightarrow>
   well_typed env (exp_red_use_env r_s1 g_ax) e tau (exp_red_use_env r_s2 g_ax) (end_red_use_env rx g_ax)"    
@@ -1067,157 +1055,26 @@ lemma gen_safe_red_exp: "\<lbrakk> well_typed env r_s1 (app_hole h e1) tau r_s2 
     (* pair case 2 *)
    apply (rule_tac gsre_rhs_pair_case)
                       apply (auto)
-    (* unpack case *)(*
-  apply (cut_tac r_sc="r_s3a" and r_sb="r_s2b" and r_sa="r_s1" in trans_leq_use_env)
-    apply (auto)
-   apply (rule_tac well_typed_perm_leq)
-   apply (auto)
-  apply (cut_tac r_sc="r_s2a" and r_sb="diff_use_env r_s3a (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_exa)" and r_sa="r_s1" in trans_leq_use_env)
-    apply (rule_tac diff_leq_use_env)
-    apply (auto)
-  apply (cut_tac r_sc="r_s2" and r_sb="diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)" and r_sa="r_s1" in trans_leq_use_env)
-    apply (rule_tac r_sb="r_s2a" in trans_leq_use_env)
-     apply (simp_all)
-   apply (rule_tac diff_leq_use_env)
-   apply (rule_tac well_typed_perm_leq)
-   apply (auto)
-  apply (cut_tac env="env" and ?r_s1.0="r_s2a" and h="h" and ?e1.0="e1" and r_exp="r_exp" and ?s1.0="s1" and ?s2.0="s2" and r_f="r_f" and
-      ax="ax" in gsre_coerce)
-          apply (auto)
-   apply (rule_tac r_sb="r_s1" in trans_leq_use_env)
-    apply (auto)
-  apply (rule_tac x="g_ax" in exI)
-  apply (auto)
-  apply (rule_tac x="t1" in exI)
-  apply (rule_tac x="r" in exI)
-  apply (rule_tac x="a" in exI)
-  apply (auto)
-  apply (rule_tac x="exp_red_use_env r_s2a g_ax" in exI)
-  apply (rule_tac x="rx1" in exI)
-  apply (auto)
-    (* - re-typing the lhs of the unpack *)
-   apply (rule_tac x="t1a" in exI)
-   apply (rule_tac x="ra" in exI)
-   apply (auto)
-    apply (simp add: pure_fun_def)
-   apply (rule_tac x="exp_red_use_env r_s2b g_ax" in exI)
-   apply (auto)
-    apply (case_tac "g_ax")
-     apply (auto)
-    apply (rule_tac dist_add_leq_use_env)
-    apply (simp)
-   apply (rule_tac x="rx1a" in exI)
-   apply (auto)
-    apply (rule_tac exp_red_leq_use_env)
-    apply (simp)
-   apply (rule_tac x="rx2a" in exI)
-   apply (rule_tac x="exp_red_use_env r_s3a g_ax" in exI)
-   apply (auto)
-    apply (rule_tac env'="env" in well_typed_contain_env)
-     apply (rule_tac red_contain_env)
-      apply (auto)
-     apply (simp add: well_typed_state_def)
-    apply (rule_tac well_typed_exp_simul_perm)
-      apply (auto)
-    apply (rule_tac r_s="r_f" in trans_sub_use_env)
-     apply (simp add: valid_exp_use_env_def)
-    apply (rule_tac r_sb="r_s1" in trans_leq_use_env)
-      apply (simp add: valid_exp_use_env_def)
-     apply (auto)
-   apply (rule_tac x="r_exa" in exI)
-   apply (auto)
-      apply (case_tac g_ax)
-       apply (auto)
-      apply (rule_tac r_sb="diff_use_env (add_use_env r_s3a x21 OwnPerm) (rem_use_env (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_exa) x21)" in trans_leq_use_env)
-       apply (rule_tac dist_diff_leq_use_env_gen)
-        apply (rule_tac id_leq_use_env)
-         apply (rule_tac rhs_rem_leq_use_env)
-          apply (rule_tac r_s="r_f" in leq_use_none)
-           apply (rule_tac r_sb="r_s1" in trans_leq_use_env)
-           apply (simp add: valid_exp_use_env_def)
-         apply (rule_tac dist_comp_leq_use_env)
-          apply (rule_tac r_sb="r_s3a" in trans_leq_use_env)
-           apply (auto)
-        apply (simp add: valid_exp_use_env_def)
-        apply (simp add: sub_use_env_def)
-       apply (rule_tac id_leq_use_env)
-      apply (rule_tac t="diff_use_env (add_use_env r_s3a x21 OwnPerm) (rem_use_env (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_exa) x21)"
-        and s="add_use_env (diff_use_env r_s3a (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_exa)) x21 OwnPerm" in subst)
-       apply (rule_tac diff_add_rem_use_env)
-      apply (rule_tac dist_add_leq_use_env)
-      apply (simp)
-     apply (rule_tac exp_red_leq_use_env)
-     apply (simp)
-    apply (rule_tac exp_red_leq_use_env)
-    apply (simp)
-   apply (rule_tac exp_red_leq_use_env)
-   apply (simp)
-    (* - typing the hole *)
-  apply (rule_tac x="rx2" in exI)
-  apply (rule_tac x="r_s3" in exI)
-  apply (auto)
-  apply (case_tac g_ax)
-   apply (auto)
-  apply (rule_tac x="r_ex" in exI)
-  apply (auto)
-  apply (rule_tac rhs_add_leq_use_env)
-   apply (auto)*)
   done
-
-  (*
-lemma con_diff_snorm_use_env: "super_norm_use_env r_s1 r_s2 = diff_use_env r_s1 (infl_use_env r_s1 r_s2)"  
-  apply (case_tac "\<forall> x. super_norm_use_env r_s1 r_s2 x = diff_use_env r_s1 (infl_use_env r_s1 r_s2) x")
-   apply (auto)
-  apply (simp add: super_norm_use_env_def)
-  apply (simp add: diff_use_env_def)
-  apply (simp add: minus_use_env_def)
-  apply (simp add: neg_use_env_def)
-  apply (simp add: infl_use_env_def)
-  apply (case_tac "r_s1 x = OwnPerm \<and> r_s2 x = NoPerm")
-   apply (auto)
-   apply (case_tac "r_s1 x")
-     apply (auto)
-  apply (case_tac "r_s1 x")
-    apply (auto)
-  done
-      
-lemma well_typed_fix_end_perm: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx \<rbrakk> \<Longrightarrow>
-  well_typed env r_s1 e tau (diff_use_env r_s1 (comp_use_env (infl_use_env r_s1 r_s2) rx))
-  (diff_use_env (comp_use_env (infl_use_env r_s1 r_s2) rx) (comp_use_env (infl_use_env r_s1 r_s2) rx))"
-  apply (rule_tac t="diff_use_env r_s1 (comp_use_env (infl_use_env r_s1 r_s2) rx)" and
-      s="diff_use_env (diff_use_env r_s1 (infl_use_env r_s1 r_s2)) rx" in subst)
-   apply (rule_tac diff_comp_use_env)
-  apply (rule_tac rx="diff_use_env rx rx" in well_typed_incr_req)
-    apply (rule_tac well_typed_diff_end_perm)
-     apply (rule_tac t="diff_use_env r_s1 (infl_use_env r_s1 r_s2)" and s="super_norm_use_env r_s1 r_s2" in subst)
-      apply (rule_tac con_diff_snorm_use_env)
-     apply (rule_tac well_typed_sstr_end_perm)
-     apply (simp)
-    apply (rule_tac r_sb="r_s2" in trans_leq_use_env)
-     apply (rule_tac well_typed_perm_leq)
-     apply (auto)
-    apply (rule_tac well_typed_perm_leqx)
-    apply (auto)
-   apply (rule_tac rhs_dist_dcl_use_env)
-   apply (rule_tac comp_leq_use_env2)
-   apply (rule_tac rhs_unroll_dcl_use_env)
-   apply (rule_tac dist_diff_leq_use_env)
-   apply (rule_tac disj_diff_leq_use_env)
-    apply (rule_tac comm_disj_use_env)
-    apply (rule_tac infl_disj_use_env)
-    apply (rule_tac well_typed_perm_leqx)
-    apply (auto)
-   apply (rule_tac id_leq_use_env)
-  apply (rule_tac rhs_fold_dcl_use_env)
-  apply (rule_tac dist_diff_leq_use_env)
-  apply (rule_tac dist_comp_leq_use_env)
-   apply (rule_tac lhs_infl_leq_use_env)
-   apply (rule_tac id_leq_use_env)
-  apply (rule_tac r_sb="r_s2" in trans_leq_use_env)
-   apply (rule_tac well_typed_perm_leq)
-   apply (auto)
-  apply (rule_tac well_typed_perm_leqx)
-  apply (auto)
-  done*)
     
+fun full_red_exp where
+  "full_red_exp are (s1, e1) ax (s2, e2) = (\<exists> h ex1 ex2. e1 = app_hole h ex1 \<and> e2 = app_hole h ex2 \<and>
+    wf_hole h \<and> app_red_exp are (s1, ex1) ax (s2, ex2))"
+    
+lemma complete_full_red_exp: "\<lbrakk> app_red_exp are (s1, e1) ax (s2, e2) \<rbrakk> \<Longrightarrow> full_red_exp are (s1, e1) ax (s2, e2)"  
+  apply (auto)
+  apply (rule_tac x="ExpHole" in exI)
+  apply (auto)
+  done
+    
+lemma safe_full_red_exp: "\<lbrakk> well_typed env r_s1 e1 tau r_s2 rx; proper_exp rs_map e1; well_typed_state s1 env rs_map;
+  valid_exp_use_env s1 rs_map r_f; full_red_exp are (s1, e1) ax (s2, e2); valid_reduct app_red_exp; leq_use_env r_s1 r_f \<rbrakk> \<Longrightarrow> (\<exists> g_ax.
+    well_typed (red_env env g_ax) (exp_red_use_env r_s1 g_ax) e2 tau (end_red_use_env r_s2 g_ax) (end_red_use_env rx g_ax) \<and>
+    proper_exp (red_nres_map rs_map g_ax) e2 \<and> well_typed_state s2 (red_env env g_ax) (red_nres_map rs_map g_ax) \<and>
+    valid_exp_use_env s2 (red_nres_map rs_map g_ax) (exp_red_use_env r_f g_ax) \<and> safe_act s1 (infl_use_env r_f r_s2) g_ax \<and> corr_act ax g_ax)"
+  apply (auto)
+  apply (rule_tac are="are" in gen_safe_red_exp)
+         apply (auto)
+  done
+  
 end

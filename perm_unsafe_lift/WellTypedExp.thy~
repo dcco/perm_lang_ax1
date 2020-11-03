@@ -204,6 +204,13 @@ fun safe_pair_aff where
 | "safe_pair_aff a UsePerm = (a \<noteq> Aff)"
 | "safe_pair_aff a OwnPerm = True"
   
+fun aff_leq where
+  "aff_leq Prim r = True"  
+| "aff_leq Ref NoPerm = False"  
+| "aff_leq Ref r = True"
+| "aff_leq Aff OwnPerm = True"  
+| "aff_leq Aff r = False"  
+  
 fun well_typed :: "pt_env \<Rightarrow> perm_use_env \<Rightarrow> p_exp \<Rightarrow> p_type \<Rightarrow> perm_use_env \<Rightarrow> perm_use_env \<Rightarrow> bool" where
   "well_typed env r_s1 (ConstExp c) tau r_s2 rx = (tau \<in> const_type c \<and> leq_use_env r_s2 r_s1 \<and> leq_use_env rx r_s2)"
 | "well_typed env r_s1 (OpExp xop) tau r_s2 rx = (tau = op_type xop \<and> leq_use_env r_s2 r_s1 \<and> leq_use_env rx r_s2)"
@@ -213,8 +220,8 @@ fun well_typed :: "pt_env \<Rightarrow> perm_use_env \<Rightarrow> p_exp \<Right
     leq_use_env rx r_s2 \<and> leq_use_env r_ex r_s1 \<and> leq_use_env (diff_use_env (ereq_use_env x tau_x) (comp_use_env (ereq_use_env x tau_x) r_ex)) rx)"
 | "well_typed env r_s1 (PairExp e1 e2) tau r_sf rf = (\<exists> t1 t2 r r_s2 r_s3 rx1 rx2 r_ex. tau = PairTy t1 t2 r \<and>
     well_typed env r_s1 e1 t1 r_s2 rx1 \<and> well_typed env r_s2 e2 t2 r_s3 rx2 \<and> (*aff_use_env rx (req_type tau) \<and>*)
-    safe_pair_aff (max_aff (req_type t1) (req_type t2)) r \<and>
-    leq_use_env (lift_use_env rx1 r) r_s3 \<and> leq_use_env (lift_use_env rx2 r) r_s3 \<and>
+    (*safe_pair_aff (max_aff (req_type t1) (req_type t2)) r \<and>*)
+    leq_use_env (lift_use_env rx1 r) r_s3 \<and> leq_use_env (lift_use_env rx2 r) r_s3 \<and> aff_leq (max_aff (req_type t1) (req_type t2)) r \<and>
     (*safe_use_lift rx1 r \<and> safe_use_lift rx2 r \<and> safe_type t1 r \<and> safe_type t2 r
     (*leq_use_env rx1 rx \<and> leq_use_env rx2 rx*) \<and>*) disj_use_env (lift_use_env rx1 r) (lift_use_env rx2 r) \<and>
     leq_use_env r_sf (diff_use_env r_s3 r_ex) \<and> leq_use_env rf r_sf \<and> leq_use_env r_ex r_s1 \<and>
@@ -235,7 +242,7 @@ fun well_typed :: "pt_env \<Rightarrow> perm_use_env \<Rightarrow> p_exp \<Right
     leq_use_env r_ex r_s1 \<and> leq_use_env (diff_use_env rx r_ex) rf)"
 | "well_typed env r_s1 (AppExp e1 e2) tau r_sf rx = (\<exists> t1 r a r_s2 rx1 rx2 r_s3 r_ex.
     well_typed env r_s1 e1 (FunTy t1 tau r a) r_s2 rx1 \<and> well_typed env r_s2 e2 t1 r_s3 rx2 \<and>
-    leq_use_env r_sf (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)) \<and> r \<noteq> NoPerm \<and> (*safe_use_lift rx2 r \<and>
+    leq_use_env r_sf (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)) \<and> (*r \<noteq> NoPerm \<and>*) (*safe_use_lift rx2 r \<and>
     safe_type t1 r \<and>*) leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3 \<and>
     disj_use_env rx1 (lift_use_env rx2 r) \<and> leq_use_env rx r_sf \<and> 
     leq_use_env r_ex r_s1 \<and> leq_use_env (app_req rx1 rx2 r tau r_ex) rx

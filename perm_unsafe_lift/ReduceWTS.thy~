@@ -54,6 +54,17 @@ fun well_typed_mem_value where
 | "well_typed_mem_value env r_s tau ChanSValue = (\<exists> t. tau = ChanTy t SEnd)"
 | "well_typed_mem_value env r_s tau (ChanRValue c_s) = (\<exists> t. tau = ChanTy t REnd \<and>
     env c_s = Some (ChanTy t SEnd))"
+  
+
+fun proper_list where
+  "proper_list rs_map Nil = True"
+| "proper_list rs_map (e # t) = (proper_exp rs_map e \<and> proper_list rs_map t)"  
+  
+fun proper_mem_value where
+  "proper_mem_value rs_map (ArrValue el) = proper_list rs_map el"
+| "proper_mem_value rs_map other = True"
+
+  
     (* all pairs must be typable  *)(*
 | "well_typed_mem_value s env r_s tau (PairValue e1 e2) = (\<exists> t1 t2 r rx1 rx2. tau = PairTy t1 t2 r \<and> is_value e1 \<and> is_value e2 \<and>
   leq_use_env (lift_use_env rx1 r) r_s \<and> leq_use_env (lift_use_env rx2 r) r_s \<and> disj_use_env (lift_use_env rx1 r) (lift_use_env rx2 r) \<and>
@@ -168,7 +179,7 @@ definition well_typed_state :: "p_state \<Rightarrow> pt_env \<Rightarrow> nres_
     None \<Rightarrow> True
     | Some v \<Rightarrow> (case env x of
       None \<Rightarrow> False 
-      | Some tau \<Rightarrow> well_typed_mem_value env (nres_lookup rs_map x) tau v
+      | Some tau \<Rightarrow> well_typed_mem_value env (nres_lookup rs_map x) tau v \<and> proper_mem_value rs_map v
     )
   ))"    
     
@@ -250,5 +261,45 @@ lemma prim_type_no_req: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; req_type t
   apply (simp add: app_req_def)
   apply (rule_tac leq_empty_use_env)
   done
+    
+    
+lemma add_vars_path_lookup: "\<lbrakk> path_lookup rs_map x l y; leq_use_env (nres_lookup rs_map z) r_s \<rbrakk> \<Longrightarrow>
+  (\<exists> l. path_lookup (add_env rs_map z r_s) x l y)"    
+  apply (induct l arbitrary: x)
+   apply (auto)
+   apply (rule_tac x="Nil" in exI)
+   apply (auto)
+  apply (case_tac "rs_map x")
+   apply (auto)
+  apply (case_tac "\<exists>l. path_lookup (add_env rs_map z r_s) a l y")
+   apply (erule_tac exE)
+   apply (auto)
+  apply (rule_tac x="a # la" in exI)
+  apply (auto)
+  apply (simp add: add_env_def)
+  apply (auto)
+  apply (simp add: nres_lookup_def)
+  apply (cut_tac r_x="aa" and r_s="r_s" and x="a" in leq_use_none)
+    apply (auto)
+  done
+
+lemma proper_add_list: "\<lbrakk> proper_list rs_map el; leq_use_env (nres_lookup rs_map x) r_s \<rbrakk> \<Longrightarrow> proper_list (add_env rs_map x r_s) el"    
+  apply (induct el)
+   apply (auto)
+  apply (simp add: proper_exp_def)
+  apply (auto)
+  apply (erule_tac x="xa" in allE)
+  apply (erule_tac x="y" in allE)
+  apply (auto)
+  apply (rule_tac l="l" in add_vars_path_lookup)
+   apply (auto)
+  done
+    
+lemma proper_add_mv: "\<lbrakk> proper_mem_value rs_map v; leq_use_env (nres_lookup rs_map x) r_s \<rbrakk> \<Longrightarrow> proper_mem_value (add_env rs_map x r_s) v"    
+  apply (case_tac v)
+    apply (auto)
+  apply (rule_tac proper_add_list)
+    apply (auto)
+  done    
     
 end

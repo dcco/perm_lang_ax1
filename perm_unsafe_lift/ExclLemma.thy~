@@ -1,0 +1,291 @@
+theory ExclLemma
+  imports SafeRedCV ProcCVars ProcDef
+begin
+  
+definition can_access where
+  "can_access e x = (x \<in> ref_vars e)"
+  
+  (*thm proper_exp_def*)
+  
+lemma well_typed_deref_ex: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; x \<notin> free_vars e; x \<in> ref_vars e \<rbrakk> \<Longrightarrow> (\<exists> z. (z, x) \<in> deref_pairs e)"    
+  apply (induct e arbitrary: env r_s1 tau r_s2 rx)
+        apply (auto)
+    (* var case *)
+         apply (case_tac x2a)
+           apply (auto)
+    (* pair case. *)
+        apply (blast)
+       apply (blast)
+    (* if case. *)
+      apply (blast)
+     apply (blast)
+    apply (blast)
+    (* lam case. *)
+   apply (blast)
+    (* app case. *)
+  apply (blast)
+  done
+ 
+lemma well_typed_deref_ref_use: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; (x, y) \<in> deref_pairs e \<rbrakk> \<Longrightarrow> x \<in> ref_vars e"     
+  apply (induct e arbitrary: env r_s1 tau r_s2 rx)
+        apply (auto)
+    (* var case *)
+      apply (case_tac x2a)
+        apply (auto)
+    (* other cases. *)  
+     apply (blast)
+    apply (blast)
+   apply (blast)
+  apply (blast)
+  done
+    
+lemma well_typed_deref_npv_use: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; (x, y) \<in> deref_pairs e \<rbrakk> \<Longrightarrow> x \<in> non_prim_vars env e"  
+  apply (induct e arbitrary: env r_s1 tau r_s2 rx)
+        apply (auto)
+    (* var case *)
+          apply (case_tac x2a)
+            apply (auto)
+          apply (simp add: non_prim_vars_def)
+          apply (simp add: non_prim_entry_def)
+          apply (cut_tac tau_x="tau_x" in var_value_unlim)
+            apply (auto)
+    (* other cases. *)
+         apply (simp add: non_prim_vars_def)
+        apply (simp add: non_prim_vars_def)
+       apply (simp add: non_prim_vars_def)
+      apply (simp add: non_prim_vars_def)
+     apply (simp add: non_prim_vars_def)
+    apply (simp add: non_prim_vars_def)
+    (* lam case *)
+    apply (case_tac "x = x1a")
+     apply (cut_tac e="e" and x="x" and env="add_env env x1a t1" in well_typed_deref_ref_use)
+       apply (auto)
+    apply (simp add: non_prim_entry_def)
+    apply (case_tac "\<exists> t. add_env env x1a t1 x = Some t \<and> req_type t \<noteq> Prim")
+     apply (simp add: add_env_def)
+    apply (auto)
+    (* app case *)
+   apply (simp add: non_prim_vars_def)
+  apply (simp add: non_prim_vars_def)
+  done
+    
+fun in_path where
+  "in_path x [] = False"
+| "in_path x (y # t) = (x = y \<or> in_path x t)"  
+  
+  
+    (* if x \<leadsto> z and y \<leadsto> z, and x is in the path from y \<leadsto> z, then y \<leadsto> a \<leadsto> x \<leadsto> z *)
+lemma path_lookup_cross_ih: "\<lbrakk> path_lookup rs_map x l z; in_path x m; path_lookup rs_map y m z \<rbrakk> \<Longrightarrow>
+  (\<exists> a m'. path_lookup rs_map y m' a \<and> nres_lookup rs_map a x \<noteq> NoPerm \<and> path_lookup rs_map x l z)"
+  apply (induct m arbitrary: y)  
+   apply (auto)
+    (* case where x = a (the top of the path) *)
+   apply (case_tac "rs_map y")
+    apply (auto)
+   apply (rule_tac x="y" in exI)
+   apply (auto)
+    apply (rule_tac x="[]" in exI)
+    apply (simp)
+   apply (simp add: nres_lookup_def)
+    (* inductive case *)
+  apply (case_tac "rs_map y")
+   apply (auto)
+  apply (case_tac "\<exists>b. (\<exists>m'. path_lookup rs_map a m' b) \<and> nres_lookup rs_map b x \<noteq> NoPerm")
+   apply (erule_tac exE)
+   apply (auto)
+  apply (rule_tac x="b" in exI)
+  apply (auto)
+   apply (rule_tac x="a # m'" in exI)
+  apply (auto)
+  done
+    
+lemma end_in_path: "\<lbrakk> x \<noteq> y; path_lookup rs_map x l y \<rbrakk> \<Longrightarrow> in_path y l"    
+  apply (induct l arbitrary: x)
+   apply (auto)
+  apply (case_tac "rs_map x")
+   apply (auto)
+  apply (case_tac "a = y")
+   apply (auto)
+  done
+    
+    (* if x \<leadsto> z and y \<leadsto> z, then x \<leadsto> a \<leadsto> c \<leadsto> z, and y \<leadsto> b \<leadsto> c \<leadsto> z, a \<noteq> b *)
+lemma path_lookup_cross: "\<lbrakk> x \<noteq> y; l \<noteq> []; m \<noteq> []; path_lookup rs_map x l z; path_lookup rs_map y m z \<rbrakk> \<Longrightarrow>
+  (\<exists> a b c l' m' lx. path_lookup rs_map x l' a \<and> path_lookup rs_map y m' b \<and>
+    nres_lookup rs_map a c \<noteq> NoPerm \<and> nres_lookup rs_map b c \<noteq> NoPerm \<and> path_lookup rs_map c lx z)"
+    (* we induct over the l, attempting to apply the induction lemma, when x is in_path m *)
+  apply (induct l arbitrary: x)
+   apply (auto)
+  apply (case_tac "rs_map x")
+   apply (auto)
+    (* if a is in_path m, our lemma works. we can select x \<leadsto> x \<leadsto> a \<leadsto> z, y \<leadsto> ? \<leadsto> a \<leadsto> z *)
+  apply (case_tac "in_path a m")
+   apply (cut_tac x="a" and rs_map="rs_map" and l="l" and y="y" and z="z" and m="m" in path_lookup_cross_ih)
+      apply (auto)
+   apply (rule_tac x="x" in exI)
+   apply (auto)
+    apply (rule_tac x="[]" in exI)
+    apply (auto)
+   apply (rule_tac x="ab" in exI)
+   apply (auto)
+   apply (rule_tac x="a" in exI)
+   apply (simp add: nres_lookup_def)
+   apply (case_tac "rs_map ab")
+    apply (auto)
+    (* if a = y, we can select x \<leadsto> x \<leadsto> y \<leadsto> z, y \<leadsto> y \<leadsto> ? \<leadsto> z *)
+  apply (case_tac "a = y")
+   apply (auto)
+   apply (case_tac m)
+    apply (auto)
+   apply (case_tac "rs_map y")
+    apply (auto)
+   apply (rule_tac x="y" in exI)
+   apply (auto)
+    apply (rule_tac x="[y]" in exI)
+    apply (auto)
+   apply (rule_tac x="a" in exI)
+   apply (auto)
+    apply (rule_tac x="[a]" in exI)
+    apply (auto)
+    apply (rule_tac x="a" in exI)
+    (* otherwise, we can induct. *)
+  apply (case_tac "\<exists>a'. (\<exists>l'. path_lookup rs_map a l' a') \<and>
+                     (\<exists>b. (\<exists>m'. path_lookup rs_map y m' b) \<and>
+                          (\<exists>c. nres_lookup rs_map a' c \<noteq> NoPerm \<and> nres_lookup rs_map b c \<noteq> NoPerm \<and> (\<exists>lx. path_lookup rs_map c lx z)))")
+   apply (erule_tac exE)
+   apply (auto)
+    (* - we take x \<leadsto> a' \<leadsto> c \<leadsto> z, y \<leadsto> b \<leadsto> c \<leadsto> z *)
+   apply (rule_tac x="a'" in exI)
+   apply (auto)
+   apply (rule_tac x="a # l'" in exI)
+   apply (auto)
+    (* to activate the induction, we prove a \<noteq> y *)
+  apply (case_tac "a = y")
+    apply (auto)
+    
+    (* if x is in_path m, our lemma works. we can select a = x,  *)
+  apply (case_tac "in_path x m")
+   apply (cut_tac x="x" and rs_map="rs_map" and l="a # l" and y="y" and z="z" and m="m" in path_lookup_cross_ih)
+      apply (auto)
+   apply (rule_tac x="x" in exI)
+    apply (rule_tac x="
+    
+    
+    
+    
+    
+  
+lemma wts_excl_dom_use_env: "\<lbrakk> well_typed_state s env rs_map; p_set u = Some e; p_set v = Some e' \<rbrakk> \<Longrightarrow>
+  strong_disj_use_env (full_dom_use_env env rs_map e) (full_dom_use_env env rs_map e')"
+    (* if this is not true, there is some z \<leadsto> x, za \<leadsto> x *)
+  apply (simp add: strong_disj_use_env_def)
+  apply (auto)
+  apply (simp add: full_dom_use_env_def)
+  apply (simp add: dom_use_env_def)
+  apply (case_tac "\<exists>l z. z \<in> non_prim_vars env e' \<and> path_lookup rs_map z l x")
+   apply (auto)
+    (* we should be able to find a, b, c where z \<leadsto> a \<leadsto> c \<leadsto> x and za \<leadsto> b \<leadsto> c \<leadsto> x*)
+    
+  
+  
+lemma well_typed_no_dom_use: "\<lbrakk> well_typed_state s env rs_map; p_set u = Some e; p_map u = Some r_s;
+  well_typed env r_s e UnitTy r_se r_xe; x \<in> ref_vars e; proper_exp rs_map e \<rbrakk> \<Longrightarrow> full_dom_use_env env rs_map e x \<noteq> NoPerm"
+    (* free_var case. in this case it is in the dominator since it is non-prim *)
+  apply (case_tac "x \<in> free_vars e")
+   apply (case_tac "env x = None")
+    apply (cut_tac env="env" and x="x" and e="e" in well_typed_fv_env_use)
+      apply (auto)
+   apply (case_tac "x \<notin> non_prim_vars env e")
+    apply (cut_tac s="s" and env="env" and rs_map="rs_map" in wts_mem_val_env)
+     apply (simp)
+    apply (simp add: mem_val_env_def)
+    apply (erule_tac x="x" in allE)
+    apply (auto)
+    apply (simp add: non_prim_vars_def)
+    apply (simp add: non_prim_entry_def)
+    apply (case_tac y)
+          apply (auto)
+   apply (simp add: full_dom_use_env_def)
+   apply (simp add: dom_use_env_def)
+   apply (case_tac "\<exists> l z. z \<in> non_prim_vars env e \<and> path_lookup rs_map z l x")
+    apply (auto)
+   apply (erule_tac x="[]" in allE)
+   apply (erule_tac x="x" in allE)
+   apply (auto)
+    (* otherwise, we presume that it has an owner with permissions in r_s. since e is proper, there is a lookup between them *)
+  apply (cut_tac x="x" and e="e" in well_typed_deref_ex)
+     apply (auto)
+  apply (simp add: proper_exp_def)
+  apply (erule_tac x="z" in allE)
+  apply (erule_tac x="x" in allE)
+  apply (auto)
+  apply (simp add: full_dom_use_env_def)
+  apply (simp add: dom_use_env_def)
+  apply (case_tac "\<exists> l z. z \<in> non_prim_vars env e \<and> path_lookup rs_map z l x")
+   apply (auto)
+  apply (erule_tac x="l" in allE)
+  apply (erule_tac x="z" in allE)
+  apply (auto)
+  apply (cut_tac x="z" and y="x" and e="e" in well_typed_deref_npv_use)
+    apply (auto)
+  done
+    
+lemma excl_safe_lemma: "\<lbrakk> well_typed_system env rs_map p_map s p_set; p_set u = Some e; can_access e x;
+  p_set v = Some e'; u \<noteq> v \<rbrakk> \<Longrightarrow> \<not> can_access e' x"
+    (* prelim: p_map u + v has an entry *)
+  apply (case_tac "p_map u = None \<or> p_map v = None")
+   apply (simp add: well_typed_system_def)
+   apply (simp add: well_typed_proc_set_def)
+   apply (simp add: full_nres_map_def)
+   apply (auto)
+    apply (erule_tac x="u" in allE)
+    apply (auto)
+   apply (erule_tac x="v" in allE)
+   apply (auto)
+    (* prelim: e must be well-typed + proper *)
+  apply (case_tac "\<not> (\<exists> r_s rx. well_typed env y e UnitTy r_s rx \<and> proper_exp rs_map e)")
+   apply (simp add: well_typed_system_def)
+   apply (simp add: well_typed_proc_set_def)
+   apply (auto)
+    apply (erule_tac x="u" in allE)
+    apply (auto)
+   apply (erule_tac x="u" in allE)
+   apply (auto)
+    (* prelim: e' is also well-typed + proper *)
+  apply (case_tac "\<not> (\<exists> r_s rx. well_typed env ya e' UnitTy r_s rx \<and> proper_exp rs_map e')")
+   apply (simp add: well_typed_system_def)
+   apply (simp add: well_typed_proc_set_def)
+   apply (auto)
+    apply (erule_tac x="v" in allE)
+    apply (auto)
+   apply (erule_tac x="v" in allE)
+   apply (auto)
+    (* the general approach is that if r_s1 x \<noteq> None, *)
+    (* x is free var case. in this case, we directly require permissions *)
+  apply (case_tac "x \<in> free_vars e")
+   apply (case_tac "env x = None")
+    apply (cut_tac env="env" and x="x" and e="e" in well_typed_fv_env_use)
+      apply (auto)
+   apply (case_tac "x \<notin> non_prim_vars env e")
+    apply (cut_tac s="s" and env="env" and rs_map="rs_map" in wts_mem_val_env)
+     apply (simp add: well_typed_system_def)
+    apply (simp add: non_prim_vars_def)
+    apply (simp add: non_prim_entry_def)
+    apply (simp add: mem_val_env_def)
+    apply (auto)
+    apply (erule_tac x="x" in allE)
+    apply (case_tac "env x")
+     apply (auto)
+    apply (case_tac ya)
+          apply (auto)
+   apply (cut_tac x="x" and env="env" and e="e" and ?r_s1.0="r_s1" in well_typed_no_npv_use)
+     apply (auto)
+    
+    
+   apply (simp add: non_prim_vars_def)
+    apply (simp add: non_prim_entry_def)
+    apply (erule_tac x="x" in allE)
+    
+  apply (simp add: can_access_def)
+    
+  
+end

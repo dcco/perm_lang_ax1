@@ -143,7 +143,7 @@ lemma well_typed_sstr_end_perm: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx \<r
          apply (auto)
       apply (rule_tac rhs_snorm_leq_use_env2)
        apply (auto)
-      apply (rule_tac r_sb="diff_use_env r_s1 (comp_use_env (ereq_use_env x1a tau) r_ex)" in trans_leq_use_env)
+      apply (rule_tac r_sb="diff_use_env r_s1 (comp_use_env (ereq_use_env x1a tau_x) r_ex)" in trans_leq_use_env)
        apply (rule_tac self_diff_leq_use_env)
       apply (auto)
     (* pair case *)

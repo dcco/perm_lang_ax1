@@ -1099,10 +1099,10 @@ lemma sares_cv_case: "
   \<lbrakk>well_typed_state s1 env rs_map; valid_exp_use_env s1 rs_map r_f; leq_use_env r_s1 r_f; are = CVApp; e1 = AppExp (AppExp (ConstExp c) v1) v2;
         bin_const c; is_value v1; is_value v2; app_cv s1 c v1 v2 ax (s2, e2); FunTy t1a (FunTy t1 tau r a) ra aa \<in> const_type c;
         proper_exp rs_map (AppExp (AppExp (ConstExp c) v1) v2); well_typed env r_s2a v2 t1 r_s3 rx2; leq_use_env r_s2aa r_s1;
-        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); leq_use_env rx1a r_s2aa; r \<noteq> NoPerm;
+        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); leq_use_env rx1a r_s2aa;
         well_typed env r_s2aa v1 t1a r_s3a rx2a;
         leq_use_env r_s2a (diff_use_env r_s3a (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_exa));
-        leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; (*safe_use_lift rx2a ra;*) disj_use_env rx1 (lift_use_env rx2 r); ra \<noteq> NoPerm;
+        leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; (*safe_use_lift rx2a ra;*) disj_use_env rx1 (lift_use_env rx2 r);
         leq_use_env rx r_s2; leq_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_s3a; leq_use_env r_ex r_s1; leq_use_env (app_req rx1 rx2 r tau r_ex) rx;
         disj_use_env rx1a (lift_use_env rx2a ra); leq_use_env rx1 r_s2a; leq_use_env r_exa r_s1;
         leq_use_env (app_req rx1a rx2a ra (FunTy t1 tau r a) r_exa) rx1\<rbrakk>
@@ -1118,7 +1118,6 @@ lemma sares_cv_case: "
       apply (rule_tac x="t1" in exI)
       apply (rule_tac x="r" in exI)
       apply (rule_tac x="a" in exI)
-      apply (auto)
       apply (rule_tac x="r_s2a" in exI)
       apply (rule_tac x="rx1" in exI)
       apply (simp add: ext_arr_abbrev_def)

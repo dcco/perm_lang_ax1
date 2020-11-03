@@ -1102,7 +1102,7 @@ lemma sares_cv_case: "
         leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); leq_use_env rx1a r_s2aa; r \<noteq> NoPerm;
         well_typed env r_s2aa v1 t1a r_s3a rx2a;
         leq_use_env r_s2a (diff_use_env r_s3a (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_exa));
-        leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; safe_use_lift rx2a ra; disj_use_env rx1 (lift_use_env rx2 r); ra \<noteq> NoPerm;
+        leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; (*safe_use_lift rx2a ra;*) disj_use_env rx1 (lift_use_env rx2 r); ra \<noteq> NoPerm;
         leq_use_env rx r_s2; leq_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_s3a; leq_use_env r_ex r_s1; leq_use_env (app_req rx1 rx2 r tau r_ex) rx;
         disj_use_env rx1a (lift_use_env rx2a ra); leq_use_env rx1 r_s2a; leq_use_env r_exa r_s1;
         leq_use_env (app_req rx1a rx2a ra (FunTy t1 tau r a) r_exa) rx1\<rbrakk>

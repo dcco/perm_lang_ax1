@@ -433,11 +433,17 @@ lemma disj_pwrite_use_env: "\<lbrakk> semi_weak_use_env r_x r_set; semi_weak_use
     
   
 lemma disj_lift_pwrite_use_env: "\<lbrakk> disj_use_env (lift_use_env r_x r) (lift_use_env r_s r);
-  leq_use_env (lift_use_env r_x r) r_c; leq_use_env (lift_use_env r_s r) r_c; semi_weak_use_env r_c r_set; x \<in> r_set; r \<noteq> NoPerm (*safe_use_lift r_ex r*) \<rbrakk> \<Longrightarrow>
+  leq_use_env (lift_use_env r_x r) r_c; leq_use_env (lift_use_env r_s r) r_c; semi_weak_use_env r_c r_set; x \<in> r_set(*r;  \<noteq> NoPerm safe_use_lift r_ex r*) \<rbrakk> \<Longrightarrow>
   disj_use_env (lift_use_env (pwrite_use_env r_x r_set x) r) (lift_use_env (pwrite_use_env r_s r_set x) r)"    
   apply (case_tac "\<not> is_own r")
    apply (simp add: is_own_def)
-   apply (case_tac r)
+    apply (case_tac r)
+      apply (auto)
+    apply (rule_tac disj_pwrite_use_env)
+       apply (auto)
+     apply (rule_tac r_s="r_c" in sw_leq_use_env)
+      apply (auto)
+    apply (rule_tac r_s="r_c" in sw_leq_use_env)
      apply (auto)
    apply (rule_tac disj_pwrite_use_env)
      apply (auto)
@@ -820,15 +826,15 @@ lemma wtaer_var_case: "\<lbrakk> (*not_free_var x (VarExp x1a x2a);*) (if x2a = 
   done
   
 lemma wtaer_pair_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e1 tau r_s2 rx; (*not_free_var x e1;*) r_set \<inter> lam_vars e1 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e1 tau r_s2 rx; r_set \<inter> lam_vars e1 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e1 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
         \<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e2 tau r_s2 rx; (*not_free_var x e2;*) r_set \<inter> lam_vars e2 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e2 tau r_s2 rx; r_set \<inter> lam_vars e2 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e2 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
-       (* not_free_var x (PairExp e1 e2);*) r_set \<inter> (lam_vars e1 \<union> lam_vars e2) = {}; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t;
-        pre_ref_vars e1 \<subseteq> r_set; pre_ref_vars e2 \<subseteq> r_set; well_typed env r_s1 e1 t1 r_s2a rx1; well_typed env r_s2a e2 t2 r_s3 rx2; r \<noteq> NoPerm;
-        leq_use_env (lift_use_env rx1 r) r_s3; leq_use_env (lift_use_env rx2 r) r_s3;
-        disj_use_env (lift_use_env rx1 r) (lift_use_env rx2 r); leq_use_env r_s2 (diff_use_env r_s3 r_ex); leq_use_env rx r_s2; leq_use_env r_ex r_s1;
+        r_set \<inter> (lam_vars e1 \<union> lam_vars e2) = {}; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t; pre_ref_vars e1 \<subseteq> r_set;
+        pre_ref_vars e2 \<subseteq> r_set; well_typed env r_s1 e1 t1 r_s2a rx1; well_typed env r_s2a e2 t2 r_s3 rx2; leq_use_env (lift_use_env rx1 r) r_s3;
+        leq_use_env (lift_use_env rx2 r) r_s3; aff_leq (max_aff (req_type t1) (req_type t2)) r; disj_use_env (lift_use_env rx1 r) (lift_use_env rx2 r);
+        leq_use_env r_s2 (diff_use_env r_s3 r_ex); leq_use_env rx r_s2; leq_use_env r_ex r_s1;
         leq_use_env (pair_req (comp_use_env (lift_use_env rx1 r) (lift_use_env rx2 r)) r_ex (PairTy t1 t2 r)) rx\<rbrakk>
        \<Longrightarrow> \<exists>r_s2a r_s3 rx1.
               well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e1 x) t1 r_s2a rx1 \<and>
@@ -839,7 +845,8 @@ lemma wtaer_pair_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
                      (\<exists>r_ex. leq_use_env (add_use_env r_s2 x UsePerm) (diff_use_env r_s3 r_ex) \<and>
                              leq_use_env (pwrite_use_env rx r_set x) (add_use_env r_s2 x UsePerm) \<and>
                              leq_use_env r_ex (add_use_env r_s1 x UsePerm) \<and>
-                             leq_use_env (pair_req (comp_use_env (lift_use_env rx1 r) (lift_use_env rx2 r)) r_ex (PairTy t1 t2 r)) (pwrite_use_env rx r_set x)))"    
+                             leq_use_env (pair_req (comp_use_env (lift_use_env rx1 r) (lift_use_env rx2 r)) r_ex (PairTy t1 t2 r))
+                              (pwrite_use_env rx r_set x)))"    
       apply (rule_tac x="add_use_env r_s2a x UsePerm" in exI)
       apply (rule_tac x="add_use_env r_s3 x UsePerm" in exI)
       apply (rule_tac x="pwrite_use_env rx1 r_set x" in exI)
@@ -934,17 +941,17 @@ lemma wtaer_pair_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
   done
 
 lemma wtaer_if_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e1 tau r_s2 rx; (*not_free_var x e1;*) r_set \<inter> lam_vars e1 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e1 tau r_s2 rx; r_set \<inter> lam_vars e1 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e1 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
         \<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e2 tau r_s2 rx; (*not_free_var x e2;*) r_set \<inter> lam_vars e2 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e2 tau r_s2 rx; r_set \<inter> lam_vars e2 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e2 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
         \<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e3 tau r_s2 rx; (*not_free_var x e3;*) r_set \<inter> lam_vars e3 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e3 tau r_s2 rx; r_set \<inter> lam_vars e3 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e3 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
-        (*not_free_var x (IfExp e1 e2 e3);*) r_set \<inter> (lam_vars e1 \<union> lam_vars e2 \<union> lam_vars e3) = {}; semi_weak_use_env r_s1 r_set; x \<in> r_set;
-        env x = Some t; mem_ty t; pre_ref_vars e1 \<subseteq> r_set; well_typed env r_s1 e1 BoolTy r_s2a rx'; pre_ref_vars e2 \<subseteq> r_set; pre_ref_vars e3 \<subseteq> r_set;
-        well_typed env r_s2a e2 tau r_s2 rx1; well_typed env r_s2a e3 tau r_s2 rx2\<rbrakk>
+        r_set \<inter> (lam_vars e1 \<union> lam_vars e2 \<union> lam_vars e3) = {}; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t; pre_ref_vars e1 \<subseteq> r_set;
+        well_typed env r_s1 e1 BoolTy r_s2a rx'; pre_ref_vars e2 \<subseteq> r_set; pre_ref_vars e3 \<subseteq> r_set; well_typed env r_s2a e2 tau r_s2 rx1;
+        well_typed env r_s2a e3 tau r_s2 rx2\<rbrakk>
        \<Longrightarrow> \<exists>rx' r_s2a.
               well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e1 x) BoolTy r_s2a rx' \<and>
               (\<exists>rx1a. well_typed env r_s2a (ack_exp e2 x) tau (add_use_env r_s2 x UsePerm) rx1a \<and>
@@ -987,12 +994,13 @@ lemma wtaer_if_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
      apply (simp add: pwrite_comp_use_env)
   done
     
+
 lemma wtaer_lam_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e tau r_s2 rx; (*not_free_var x e;*) semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e tau r_s2 rx; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
-        (*not_free_var x (LamExp x1a e);*) pre_ref_vars e \<subseteq> r_set; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t; x1a \<notin> r_set;
-        r_set \<inter> lam_vars e = {}; x1a \<notin> ref_vars e; well_typed (add_env env x1a t1) (add_use_env rxa x1a r) e t2 r_s' r_end; aff_use_env rxa a;
-        leq_use_env rxa r_s1; leq_use_env r_s2 (diff_use_env r_s1 r_ex); leq_use_env rx r_s2; leq_use_env r_ex r_s1; leq_use_env (diff_use_env rxa r_ex) rx\<rbrakk>
+        pre_ref_vars e \<subseteq> r_set; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t; x1a \<notin> r_set; r_set \<inter> lam_vars e = {}; x1a \<notin> ref_vars e;
+        well_typed (add_env env x1a t1) (add_use_env rxa x1a r) e t2 r_s' r_end; aff_use_env rxa a; leq_use_env rxa r_s1;
+        leq_use_env r_s2 (diff_use_env r_s1 r_ex); leq_use_env rx r_s2; leq_use_env r_ex r_s1; leq_use_env (diff_use_env rxa r_ex) rx\<rbrakk>
        \<Longrightarrow> \<exists>rxa. (\<exists>r_end r_s'. well_typed (add_env env x1a t1) (add_use_env rxa x1a r) (ack_exp e x) t2 r_s' r_end) \<and>
                  aff_use_env rxa a \<and>
                  leq_use_env rxa (add_use_env r_s1 x UsePerm) \<and>
@@ -1112,27 +1120,27 @@ lemma wtaer_lam_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
    apply (rule_tac dist_add_leq_use_env)
    apply (simp)
   done
-  
+
 lemma wtaer_app_case: "\<lbrakk>\<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e1 tau r_s2 rx; (*not_free_var x e1;*) r_set \<inter> lam_vars e1 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e1 tau r_s2 rx; r_set \<inter> lam_vars e1 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e1 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
         \<And>env r_s1 tau r_s2 rx.
-           \<lbrakk>well_typed env r_s1 e2 tau r_s2 rx; (*not_free_var x e2;*) r_set \<inter> lam_vars e2 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
+           \<lbrakk>well_typed env r_s1 e2 tau r_s2 rx; r_set \<inter> lam_vars e2 = {}; semi_weak_use_env r_s1 r_set; env x = Some t\<rbrakk>
            \<Longrightarrow> well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e2 x) tau (add_use_env r_s2 x UsePerm) (pwrite_use_env rx r_set x);
-        (*not_free_var x (AppExp e1 e2);*) r_set \<inter> (lam_vars e1 \<union> lam_vars e2) = {}; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t;
-        pre_ref_vars e1 \<subseteq> r_set; pre_ref_vars e2 \<subseteq> r_set; well_typed env r_s1 e1 (FunTy t1 tau r a) r_s2a rx1; well_typed env r_s2a e2 t1 r_s3 rx2;
-        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); r \<noteq> NoPerm;
+        r_set \<inter> (lam_vars e1 \<union> lam_vars e2) = {}; semi_weak_use_env r_s1 r_set; x \<in> r_set; env x = Some t; mem_ty t; pre_ref_vars e1 \<subseteq> r_set;
+        pre_ref_vars e2 \<subseteq> r_set; well_typed env r_s1 e1 (FunTy t1 tau r a) r_s2a rx1; well_typed env r_s2a e2 t1 r_s3 rx2;
+        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex));
         leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; disj_use_env rx1 (lift_use_env rx2 r); leq_use_env rx r_s2; leq_use_env r_ex r_s1;
         leq_use_env (app_req rx1 rx2 r tau r_ex) rx\<rbrakk>
        \<Longrightarrow> \<exists>t1 r a r_s2a rx1.
               well_typed env (add_use_env r_s1 x UsePerm) (ack_exp e1 x) (FunTy t1 tau r a) r_s2a rx1 \<and>
-              (\<exists>rx2 r_s3. well_typed env r_s2a (ack_exp e2 x) t1 r_s3 rx2 \<and>
-                          (\<exists>r_ex. leq_use_env (add_use_env r_s2 x UsePerm) (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)) \<and>
-                                  r \<noteq> NoPerm \<and>
-                                  leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3 \<and>
-                                  disj_use_env rx1 (lift_use_env rx2 r) \<and>
-                                  leq_use_env (pwrite_use_env rx r_set x) (add_use_env r_s2 x UsePerm) \<and>
-                                  leq_use_env r_ex (add_use_env r_s1 x UsePerm) \<and> leq_use_env (app_req rx1 rx2 r tau r_ex) (pwrite_use_env rx r_set x)))"    
+              (\<exists>rx2 r_s3.
+                  well_typed env r_s2a (ack_exp e2 x) t1 r_s3 rx2 \<and>
+                  (\<exists>r_ex. leq_use_env (add_use_env r_s2 x UsePerm) (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)) \<and>
+                          leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3 \<and>
+                          disj_use_env rx1 (lift_use_env rx2 r) \<and>
+                          leq_use_env (pwrite_use_env rx r_set x) (add_use_env r_s2 x UsePerm) \<and>
+                          leq_use_env r_ex (add_use_env r_s1 x UsePerm) \<and> leq_use_env (app_req rx1 rx2 r tau r_ex) (pwrite_use_env rx r_set x)))"    
   apply (rule_tac x="t1" in exI)
   apply (rule_tac x="r" in exI)
   apply (rule_tac x="a" in exI)

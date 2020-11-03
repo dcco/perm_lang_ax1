@@ -1195,7 +1195,25 @@ lemma well_typed_comp_perms2: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; disj
   apply (auto)
   apply (rule_tac well_typed_comp_perms)
    apply (auto)
-  done
+  done           
+    
+lemma well_typed_add_perms: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; x \<notin> non_prim_vars env e; r = OwnPerm; rx x = NoPerm \<rbrakk> \<Longrightarrow>
+  well_typed env (add_use_env r_s1 x r) e tau (add_use_env r_s2 x r) rx"
+  apply (cut_tac r_s="r_s1" and x="x" and r="r" in partial_add_rem_use_env)
+  apply (cut_tac r_s="r_s2" and x="x" and r="r" in partial_add_rem_use_env)
+  apply (cut_tac r_s="rx" and x="x" in ignore_rem_use_env)
+   apply (simp)
+  apply (cut_tac r_s="rem_use_env r_s1 x" and x="x" and r="r" in add_comp_use_env)
+   apply (auto)
+  apply (cut_tac r_s="rem_use_env r_s2 x" and x="x" and r="r" in add_comp_use_env)
+    apply (auto)
+  apply (rule_tac well_typed_comp_perms)
+   apply (cut_tac env="env" and ?r_s1.0="r_s1" and e="e" and tau="tau" and ?r_s2.0="r_s2" and rx="rx" and x="x" in well_typed_rem_perms)
+     apply (auto)
+  apply (rule_tac disj_one_use_env)
+  apply (simp add: rem_use_env_def)
+  done    
+        
    (*
 lemma well_typed_add_perms: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; x \<notin> free_vars e; r = OwnPerm; rx x = NoPerm \<rbrakk> \<Longrightarrow>
   well_typed env (add_use_env r_s1 x r) e tau (add_use_env r_s2 x r) rx"
@@ -1932,6 +1950,53 @@ lemma well_typed_simul_end_perm: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; l
   apply (rule_tac r_sb="rc" in trans_leq_use_env)
    apply (auto)
   done    
+    (*
+lemma well_typed_add_perms2: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; x \<notin> non_prim_vars env e \<rbrakk> \<Longrightarrow>
+  well_typed env (add_use_env r_s1 x r) e tau (add_use_env r_s2 x r) rx"
+  apply (rule_tac rx="rem_use_env rx x" in well_typed_incr_req)
+    apply (cut_tac r_s="r_s1" and x="x" and r="r" in partial_add_rem_use_env)
+    apply (cut_tac r_s="r_s2" and x="x" and r="r" in partial_add_rem_use_env)
+    apply (cut_tac r_s="rem_use_env r_s1 x" and x="x" and r="r" in add_comp_use_env)
+     apply (auto)
+     apply (simp add: rem_use_env_def)
+    apply (cut_tac r_s="rem_use_env r_s2 x" and x="x" and r="r" in add_comp_use_env)
+     apply (auto)
+     apply (simp add: rem_use_env_def)
+    apply (rule_tac well_typed_comp_perms)
+     apply (rule_tac well_typed_rem_perms)
+      apply (auto)
+    apply (simp add: disj_use_env_def)
+    apply (simp add: one_use_env_def)
+    apply (simp add: rem_use_env_def)
+   apply (cut_tac env="env" and ?r_s1.0="r_s1" and e="e" and tau="tau" and ?r_s2.0="r_s2" and rx="rx" and x="x" in well_typed_rem_perms)
+     apply (auto)
+  done   *)     
+    
+lemma well_typed_add_permsx: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; x \<notin> non_prim_vars env e \<rbrakk> \<Longrightarrow>
+  well_typed env (add_use_env r_s1 x r) e tau (add_use_env r_s2 x r) (add_use_env rx x r)"  
+  apply (cut_tac r_s="r_s1" and x="x" and r="r" in partial_add_rem_use_env)
+  apply (cut_tac r_s="r_s2" and x="x" and r="r" in partial_add_rem_use_env)  
+  apply (cut_tac r_s="rx" and x="x" and r="r" in partial_add_rem_use_env)  
+  apply (simp)
+  apply (cut_tac r_s="rem_use_env r_s1 x" and x="x" and r="r" in add_comp_use_env)
+   apply (auto)
+   apply (simp add: rem_use_env_def)
+  apply (cut_tac r_s="rem_use_env r_s2 x" and x="x" and r="r" in add_comp_use_env)
+   apply (auto)
+   apply (simp add: rem_use_env_def)
+  apply (cut_tac r_s="rem_use_env rx x" and x="x" and r="r" in add_comp_use_env)
+   apply (auto)
+   apply (simp add: rem_use_env_def)
+  apply (rule_tac well_typed_comp_req2)
+   apply (rule_tac well_typed_comp_perms)
+    apply (rule_tac well_typed_rem_perms)
+     apply (auto)
+   apply (simp add: disj_use_env_def)
+   apply (simp add: mini_disj_use_env_def)
+   apply (simp add: one_use_env_def)
+   apply (simp add: rem_use_env_def)
+  apply (rule_tac self_comp_leq_use_env2)
+  done
     
     (* 
       ####################################

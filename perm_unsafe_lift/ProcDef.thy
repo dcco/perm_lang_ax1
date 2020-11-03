@@ -32,11 +32,13 @@ definition well_typed_proc_set where
 datatype red_act =
   ThreadAct
   | ForkAct
-  | SendAct
+  | SendAct    
   
 fun red_proc_set :: "p_state \<times> proc_set \<Rightarrow> red_act \<Rightarrow> p_state \<times> proc_set \<Rightarrow> bool" where
-  "red_proc_set (s1, ps1) ThreadAct (s2, ps2) = (\<exists> are u h e1 e2 ax. ps1 u = Some (app_hole h e1) \<and> wf_hole h \<and>
-    app_red_exp are (s1, e1) ax (s2, e2) \<and> ps2 = add_env ps1 u (app_hole h e2))"
+  "red_proc_set (s1, ps1) ThreadAct (s2, ps2) = (\<exists> are u e1 e2 ax. ps1 u = Some e1 \<and>
+    full_red_exp are (s1, e1) ax (s2, e2) \<and> ps2 = add_env ps1 u e2)"
+(*\<exists> are u h e1 e2 ax. ps1 u = Some (app_hole h e1) \<and> wf_hole h \<and>
+    app_red_exp are (s1, e1) ax (s2, e2) \<and> ps2 = add_env ps1 u (app_hole h e2)*)
 | "red_proc_set (s1, ps1) ForkAct (s2, ps2) = (\<exists> u h e v. ps1 u = Some (app_hole h (AppExp (ConstExp ForkConst) e)) \<and>
     wf_hole h \<and> is_value e \<and> ps2 = add_env (add_env ps1 u (app_hole h (ConstExp UnitConst))) v (AppExp e (ConstExp UnitConst)) \<and>
   fresh_var ps1 v \<and> s1 = s2)"

@@ -105,7 +105,7 @@ lemma sares_lam_helper: "\<lbrakk> well_typed env r_s1 e2 tau (diff_use_env (com
 
 lemma sares_fix_case: "\<lbrakk>well_typed_state s1 env rs_map; valid_exp_use_env s1 rs_map r_f; app_red_exp FixApp (s1, AppExp (ConstExp FixConst) x62) ax (s2, e2);
         e1 = AppExp (ConstExp FixConst) x62; well_typed env r_s2a x62 t1 r_s3 rx2; proper_exp rs_map (AppExp (ConstExp FixConst) x62);
-        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); r \<noteq> NoPerm; (*safe_use_lift rx2 r; safe_type t1 r;*)
+        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); (*safe_use_lift rx2 r; safe_type t1 r;*)
         leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; disj_use_env rx1 (lift_use_env rx2 r); leq_use_env rx r_s2; leq_use_env r_ex r_s1;
         leq_use_env (app_req rx1 rx2 r tau r_ex) rx; leq_use_env r_s2a r_s1; leq_use_env rx1 r_s2a;
         FunTy t1 tau r a = pure_fun (pure_fun t t (req_type t)) t Prim; fun_ty t; unlim t; leq_use_env r_s1 r_f \<rbrakk>
@@ -279,7 +279,7 @@ lemma sares_fix_case: "\<lbrakk>well_typed_state s1 env rs_map; valid_exp_use_en
   
 lemma sares_lam_case: "\<lbrakk>well_typed_state s2 env rs_map; valid_exp_use_env s2 rs_map r_f; e1 = AppExp (LamExp x51 x52) x62; well_typed env r_s2a x62 t1 r_s3 rx2;
         proper_exp rs_map (AppExp (LamExp x51 x52) x62);
-        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); r \<noteq> NoPerm; (*safe_use_lift rx2 r; safe_type t1 r;*)
+        leq_use_env r_s2 (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_ex)); (*safe_use_lift rx2 r; safe_type t1 r;*)
         leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; disj_use_env rx1 (lift_use_env rx2 r); leq_use_env rx r_s2; leq_use_env r_ex r_s1;
         leq_use_env (app_req rx1 rx2 r tau r_ex) rx; ax = NoAct; well_typed (add_env env x51 t1) (add_use_env rxa x51 r) x52 tau r_s' r_end; is_value x62;
         aff_use_env rxa a; safe_subst_exp x52 x51 x62 e2; s1 = s2; leq_use_env rxa r_s1; leq_use_env r_s2a (diff_use_env r_s1 r_exa); leq_use_env rx1 r_s2a;

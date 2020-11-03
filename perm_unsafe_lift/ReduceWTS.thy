@@ -55,7 +55,6 @@ fun well_typed_mem_value where
 | "well_typed_mem_value env r_s tau (ChanRValue c_s) = (\<exists> t. tau = ChanTy t REnd \<and>
     env c_s = Some (ChanTy t SEnd))"
   
-
 fun proper_list where
   "proper_list rs_map Nil = True"
 | "proper_list rs_map (e # t) = (proper_exp rs_map e \<and> proper_list rs_map t)"  

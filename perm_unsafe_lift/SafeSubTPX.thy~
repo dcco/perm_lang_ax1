@@ -120,7 +120,7 @@ lemma cancel_refl_leq_use_env: "leq_use_env (diff_use_env (refl_use_env r_s r_x 
 lemma subst_type_preserve_app: "\<lbrakk> well_typed (add_env env x t) (add_use_env rx1 x r) e tau r_se r_xe;
   well_typed env r_s2 e' t r_s3 rx2; rx1 x = NoPerm; x \<in> free_vars e; x \<notin> ref_vars e; is_sexp e';
   lam_vars e \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3;
-  safe_use_lift rx2 r; safe_type t r; disj_use_env rx1 (lift_use_env rx2 r); leq_use_env r_s2 r_s1; leq_use_env rx1 r_s1 \<rbrakk> \<Longrightarrow>
+  r \<noteq> NoPerm; (*safe_use_lift rx2 r; safe_type t r;*) disj_use_env rx1 (lift_use_env rx2 r); leq_use_env r_s2 r_s1; leq_use_env rx1 r_s1 \<rbrakk> \<Longrightarrow>
   well_typed env r_s1 (subst_exp e x e') tau (diff_use_env r_s3 (comp_use_env rx1 (lift_use_env rx2 r)))
     (diff_use_env (comp_use_env rx1 rx2) (comp_use_env rx1 (lift_use_env rx2 r)))"
   apply (cut_tac env="env" and ?r_s1.0="r_s2" and e="e'" and tau="t" and ?r_s2.0="r_s3" and rx="rx2" in infl_sexp_wp)
@@ -1226,7 +1226,7 @@ lemma sstp_add_perms: "\<lbrakk> well_typed env (add_use_env r_s1 x r) e tau r_s
     *)
 lemma safe_subst_type_preserve_x: "\<lbrakk> well_typed (add_env env x t) (add_use_env rx1 x r) e1 tau r_s' r_end; safe_subst_exp e1 x e' e2;
   is_sexp e'; well_typed env r_s2 e' t r_s3 rx2; leq_use_env r_s2 r_s1; leq_use_env rx1 r_s1;
-  leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; safe_use_lift rx2 r; safe_type t r; disj_use_env rx1 (lift_use_env rx2 r) \<rbrakk> \<Longrightarrow>
+  leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s3; r \<noteq> NoPerm; (*safe_use_lift rx2 r; safe_type t r;*) disj_use_env rx1 (lift_use_env rx2 r) \<rbrakk> \<Longrightarrow>
   well_typed env r_s1 e2 tau (diff_use_env r_s3 (comp_use_env rx1 (lift_use_env rx2 r)))
     (diff_use_env (comp_use_env rx1 rx2) (comp_use_env rx1 (lift_use_env rx2 r)))"    
   apply (simp add: safe_subst_exp_def)

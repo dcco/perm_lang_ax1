@@ -80,6 +80,8 @@ fun app_con :: "p_state \<Rightarrow> p_const \<Rightarrow> p_exp \<Rightarrow> 
 | "app_con s NewChanConst v ax (s', e') = (\<exists> c_s c_r. ax = Mk2Act c_s c_r \<and> v = ConstExp UnitConst \<and>
     e' = (PairExp (VarExp c_s SelfRef) (VarExp c_r SelfRef)) \<and> s' = add_env (add_env s c_s ChanSValue) c_r (ChanRValue c_s) \<and>
     fresh_var s c_s \<and> fresh_var s c_r \<and> c_s \<noteq> c_r)"
+| "app_con s UnpackConst v ax (s', e') = (\<exists> v1 v2 f. ax = NoAct \<and> v = PairExp v1 v2 \<and> s' = s \<and>
+    e' = (LamExp f (AppExp (AppExp (VarExp f NoRef) v1) v2)) \<and> f \<notin> free_vars v \<and> f \<notin> ref_vars v)"
 (*
 | "app_con s ReadConst e ax (s', e') = (\<exists> x a i v arr. ax = UseAct x \<and> ack_full_exp x v e' \<and>
     e = PairExp (VarExp x a) (ConstExp (IConst i)) \<and>
@@ -114,9 +116,9 @@ fun app_cv :: "p_state \<Rightarrow> p_const \<Rightarrow> p_exp \<Rightarrow> p
 | "app_cv s WriteConst e p ax (s', e') = (\<exists> x a i v arr arr'. e = VarExp x a \<and>
     p = PairExp (ConstExp (IConst i)) v \<and> ax = UseAct x \<and>
     s (deref_name x a) = Some (ArrValue arr) \<and> Some arr' = write_array arr i v \<and>
-    e' = unit_exp \<and> s' = add_env s (deref_name x a) (ArrValue arr'))"
+    e' = unit_exp \<and> s' = add_env s (deref_name x a) (ArrValue arr'))"(*
 | "app_cv s UnpackConst f p ax (s', e') = (\<exists> v1 v2. v1 = f \<and> p = PairExp v1 v2 \<and>
-    ax = NoAct \<and> s' = s \<and> e' = AppExp (AppExp f v1) v2)"
+    ax = NoAct \<and> s' = s \<and> e' = AppExp (AppExp f v1) v2)"*)
 
 | "app_cv s c v1 v2 ax (s', e') = False"  
   

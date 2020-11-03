@@ -20,7 +20,8 @@ lemma app_red_exp_sub_env: "\<lbrakk> app_red_exp are (s1, e1) ax (s2, e2) \<rbr
        apply (rule_tac id_sub_env)
       apply (case_tac c)
                   apply (auto)
-       apply (rule_tac add_sub_env)
+        apply (rule_tac add_sub_env)
+        apply (rule_tac id_sub_env)
        apply (rule_tac id_sub_env)
       apply (rule_tac add_sub_env)
       apply (rule_tac add_sub_env)
@@ -35,7 +36,6 @@ lemma app_red_exp_sub_env: "\<lbrakk> app_red_exp are (s1, e1) ax (s2, e2) \<rbr
     apply (rule_tac id_sub_env)  
    apply (rule_tac add_sub_env)
    apply (rule_tac id_sub_env)
-  apply (rule_tac id_sub_env)
   done   
     
   
@@ -240,9 +240,9 @@ lemma safe_fork_lam: "\<lbrakk> well_typed env r_s1 (app_hole h (AppExp (ConstEx
    apply (rule_tac leq_empty_use_env)
   apply (rule_tac x="empty_use_env" in exI)
   apply (auto)
-         apply (rule_tac leq_empty_use_env)
+         apply (rule_tac leq_empty_use_env)(*
         apply (simp add: empty_use_env_def)
-       apply (simp add: unlim_def)
+       apply (simp add: unlim_def)*)
       apply (rule_tac dist_comp_leq_use_env)
        apply (rule_tac id_leq_use_env)
       apply (rule_tac leq_empty_use_env)
@@ -1072,6 +1072,6 @@ lemma safe_red_proc_set: "\<lbrakk> well_typed_system env rs_map p_map s1 ps1; r
     (* send case. *)
   apply (rule_tac srps_send_case)
                 apply (auto)
-done  
+done
   
 end

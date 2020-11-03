@@ -26,6 +26,8 @@ lemma wt_sexp_no_npv_use: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; is_sexp 
     (* pair case *)
     apply (case_tac r)
       apply (auto)
+    apply (case_tac "max_aff (req_type t1) (req_type t2)")
+      apply (auto)
     apply (cut_tac ?a1.0="req_type t1" and ?a2.0="req_type t2" in max_aff_prim)
      apply (simp)
     apply (case_tac "x \<notin> free_vars (PairExp e1 e2)")
@@ -280,6 +282,14 @@ lemma dist_stpx_ex_leq_use_env_gen: "\<lbrakk> leq_perm q r; leq_use_env r_x r_s
   apply (auto)
   done
   
+(*
+lemma dist_lift_leq_use_env_ex: "\<lbrakk> leq_perm (lift_use_env r_s q x) r \<rbrakk> \<Longrightarrow> leq_use_env (lift_use_env r_s q) (lift_use_env r_s r)"    
+  apply (case_tac "lift_use_env r_s q \<noteq> r_s"
+   apply (case_tac q)
+     apply (auto)
+  apply (rule_tac self_lift_leq_use_env)
+  done*)
+    
 lemma dist_stpx_ex_leq_use_env: "\<lbrakk> leq_perm q r \<rbrakk> \<Longrightarrow> leq_use_env (stpx_ex (lift_use_env r_s q) q) (stpx_ex (lift_use_env r_s r) r)"    
   apply (rule_tac dist_stpx_ex_leq_use_env_gen)
    apply (simp)
@@ -1020,12 +1030,16 @@ lemma stpxpc_leq_use_env1: "\<lbrakk> leq_use_env rx1a rx; ra \<noteq> NoPerm; l
   done*)
     
 
-lemma stpxpc_leq_use_env1: "\<lbrakk>leq_use_env (lift_use_env rx1a ra) rx; ra \<noteq> NoPerm; leq_perm (rx1a x) (rx x)\<rbrakk>
+lemma stpxpc_leq_use_env1: "\<lbrakk>leq_use_env (lift_use_env rx1a ra) rx; (*ra \<noteq> NoPerm;*) leq_perm (rx1a x) (rx x)\<rbrakk>
     \<Longrightarrow> leq_use_env (lift_use_env (stpx_ex (lift_use_env rx2 (rx1a x)) (rx1a x)) ra) (stpx_ex (lift_use_env rx2 (rx x)) (rx x))"
   apply (case_tac "\<not> is_own ra")
    apply (simp add: is_own_def)
-   apply (case_tac ra)
-     apply (auto)
+   apply (case_tac "lift_use_env rx1a ra \<noteq> rx1a")
+    apply (case_tac ra)
+      apply (auto)
+   apply (case_tac "lift_use_env (stpx_ex (lift_use_env rx2 (rx1a x)) (rx1a x)) ra \<noteq> stpx_ex (lift_use_env rx2 (rx1a x)) (rx1a x)")
+    apply (case_tac ra)
+      apply (auto)
    apply (rule_tac dist_stpx_ex_leq_use_env)
    apply (auto)
   apply (case_tac "rx1a x = NoPerm")
@@ -1120,7 +1134,7 @@ lemma stpxpc_disj_use_env1: "\<lbrakk> disj_use_env (lift_use_env rx1a ra) (lift
     
 
 lemma stpxpc_disj_use_env1: "\<lbrakk> disj_use_env (lift_use_env rx1a ra) (lift_use_env rx2a ra); disj_use_env rx1 (lift_use_env rx2 r);
-  leq_perm (rx2a x) r; ra \<noteq> NoPerm; (*safe_use_lift rx2 r;*) r \<noteq> NoPerm; leq_use_env (lift_use_env rx1a ra) rx;
+  leq_perm (rx2a x) r; (*ra \<noteq> NoPerm;*) (*safe_use_lift rx2 r; r \<noteq> NoPerm;*) leq_use_env (lift_use_env rx1a ra) rx;
   leq_use_env (lift_use_env rx2a ra) rx; leq_use_env rx (add_use_env rx1 x r) \<rbrakk> \<Longrightarrow>
   disj_use_env (lift_use_env (rem_use_env rx1a x) ra) (lift_use_env (stpx_ex (lift_use_env rx2 (rx2a x)) (rx2a x)) ra)"
   apply (rule_tac r_s="rx1" in disj_leq_use_env1)
@@ -1508,12 +1522,12 @@ lemma stpxic_valid_diff: "\<lbrakk> xa \<in> non_prim_vars env (subst_exp e2 x e
     
 lemma stpxpc_coercex: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e1 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e1;
-            lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; x \<notin> ref_vars e1; r \<noteq> NoPerm;  leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; (*safe_use_lift rx2 r;*)
+            lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; x \<notin> ref_vars e1; (*r \<noteq> NoPerm;*) leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; (*safe_use_lift rx2 r;*)
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e1 x e') tau (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
   well_typed (add_env env x t) (add_use_env rx1 x r) e1 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e1;
-         lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; x \<notin> ref_vars e1; r \<noteq> NoPerm; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; (*safe_use_lift rx2 r;*) disj_use_env rx1 (lift_use_env rx2 r)
+         lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; x \<notin> ref_vars e1; (*r \<noteq> NoPerm;*) leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; (*safe_use_lift rx2 r;*) disj_use_env rx1 (lift_use_env rx2 r)
   \<rbrakk> \<Longrightarrow> well_typed env r_s1 (subst_exp e1 x e') tau (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
              (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r))"    
   apply (auto)
@@ -1521,25 +1535,25 @@ lemma stpxpc_coercex: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
 
 lemma stpx_pair_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e1 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e1;
-            x \<notin> ref_vars e1; r \<noteq> NoPerm; lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e1; lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e1 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
         \<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e2 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e2;
-            x \<notin> ref_vars e2; r \<noteq> NoPerm; lam_vars e2 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e2; lam_vars e2 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e2 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
-        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; is_sexp e'; (lam_vars e1 \<union> lam_vars e2) \<inter> (free_vars e' \<union> ref_vars e') = {}; r \<noteq> NoPerm;
+        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; is_sexp e'; (lam_vars e1 \<union> lam_vars e2) \<inter> (free_vars e' \<union> ref_vars e') = {};
         leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; disj_use_env rx1 (lift_use_env rx2 r); x \<notin> ref_vars e1; x \<notin> ref_vars e2;
         well_typed (add_env env x t) (add_use_env rx1 x r) e1 t1 r_s2 rx1a; well_typed (add_env env x t) r_s2 e2 t2 r_s3 rx2a;
-        safe_pair_aff (max_aff (req_type t1) (req_type t2)) ra; leq_use_env (lift_use_env rx1a ra) r_s3; leq_use_env (lift_use_env rx2a ra) r_s3;
+        leq_use_env (lift_use_env rx1a ra) r_s3; leq_use_env (lift_use_env rx2a ra) r_s3; aff_leq (max_aff (req_type t1) (req_type t2)) ra;
         disj_use_env (lift_use_env rx1a ra) (lift_use_env rx2a ra); leq_use_env r_se (diff_use_env r_s3 r_ex); leq_use_env r_xe r_se;
         leq_use_env r_ex (add_use_env rx1 x r);
-        leq_use_env (pair_req (comp_use_env (lift_use_env rx1a ra) (lift_use_env rx2a ra)) r_ex (PairTy t1 t2 ra)) r_xe \<rbrakk>
+        leq_use_env (pair_req (comp_use_env (lift_use_env rx1a ra) (lift_use_env rx2a ra)) r_ex (PairTy t1 t2 ra)) r_xe\<rbrakk>
        \<Longrightarrow> \<exists>r_s2 r_s3 rx1.
               well_typed env r_s1 (subst_exp e1 x e') t1 r_s2 rx1 \<and>
               (\<exists>rx2a. well_typed env r_s2 (subst_exp e2 x e') t2 r_s3 rx2a \<and>
@@ -1553,9 +1567,6 @@ lemma stpx_pair_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
                               leq_use_env r_ex r_s1 \<and>
                               leq_use_env (pair_req (comp_use_env (lift_use_env rx1 ra) (lift_use_env rx2a ra)) r_ex (PairTy t1 t2 ra))
                                (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r))))"
-    (* prelim: ra \<noteq> None *)
-  apply (case_tac "ra = NoPerm")
-   apply (auto)
     (* prelim: r_s3 \<le> rx1 + x *)
   apply (cut_tac r_sc="r_s3" and r_sb="r_s2" and r_sa="add_use_env rx1 x r" in trans_leq_use_env)
     apply (rule_tac well_typed_perm_leq)
@@ -1769,6 +1780,8 @@ lemma stpx_pair_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
         apply (simp)
        apply (case_tac r)
          apply (auto)
+        apply (case_tac "rx1a x")
+          apply (auto)
        apply (case_tac ra)
          apply (auto)
       apply (rule_tac dist_lift_leq_use_env)
@@ -1814,6 +1827,8 @@ lemma stpx_pair_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
        apply (simp)
       apply (case_tac r)
         apply (auto)
+       apply (case_tac "rx2a x")
+         apply (auto)
       apply (case_tac ra)
         apply (auto)
      apply (rule_tac dist_lift_leq_use_env)
@@ -1884,12 +1899,21 @@ lemma stpx_pair_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
      apply (simp add: is_own_def)
      apply (case_tac ra)
        apply (auto)
+    (* - ra = None*)
+      apply (rule_tac r_xa="rx1a" and r_xb="rx2a" and x="x" in stpx_ex_disj_use_env)
+      apply (rule_tac r_s="lift_use_env rx1a ra" in disj_leq_use_env1)
+       apply (rule_tac r_s="lift_use_env rx2a ra" in disj_leq_use_env2)
+        apply (simp)
+       apply (rule_tac self_lift_leq_use_env)
+      apply (rule_tac self_lift_leq_use_env)
+    (* - ra = Use *)
      apply (rule_tac r_xa="rx1a" and r_xb="rx2a" and x="x" in stpx_ex_disj_use_env)
      apply (rule_tac r_s="lift_use_env rx1a ra" in disj_leq_use_env1)
       apply (rule_tac r_s="lift_use_env rx2a ra" in disj_leq_use_env2)
        apply (simp)
       apply (rule_tac self_lift_leq_use_env)
      apply (rule_tac self_lift_leq_use_env)
+    (* - ra = Own *)
     apply (rule_tac t="comp_use_env (lift_use_env (rem_use_env rx2a x) ra) (lift_use_env (stpx_ex (lift_use_env rx2 (rx2a x)) (rx2a x)) ra)"
       and s="lift_use_env (comp_use_env (rem_use_env rx2a x) (stpx_ex (lift_use_env rx2 (rx2a x)) (rx2a x))) ra" in subst)
      apply (rule_tac lift_comp_use_env)
@@ -2229,7 +2253,7 @@ lemma dist_foil_comp_use_env: "comp_use_env (comp_use_env r_xa r_xb) (comp_use_e
   apply (cut_tac r_s="r_xb" and r_x="r_sb" in double_comp_use_env)
   apply (simp)
   done
- 
+
 lemma foil_comp_lift_use_env: "lift_use_env r_s (comp_use_env r_xa r_xb x) = comp_use_env (lift_use_env r_s (r_xa x)) (lift_use_env r_s (r_xb x))"    
   apply (case_tac "\<not> (\<forall> x'. lift_use_env r_s (comp_use_env r_xa r_xb x) x' = comp_use_env (lift_use_env r_s (r_xa x)) (lift_use_env r_s (r_xb x)) x')")  
    apply (auto)
@@ -2353,26 +2377,26 @@ lemma stpx_if_no_fv: "\<lbrakk>
     
 lemma stpx_if_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e1 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e1;
-            x \<notin> ref_vars e1; r \<noteq> NoPerm; lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e1; lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e1 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
         \<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e2 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e2;
-            x \<notin> ref_vars e2; r \<noteq> NoPerm; lam_vars e2 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e2; lam_vars e2 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e2 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
         \<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e3 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e3;
-            x \<notin> ref_vars e3; r \<noteq> NoPerm; lam_vars e3 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e3; lam_vars e3 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e3 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
-        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; is_sexp e'; r \<noteq> NoPerm;
+        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; is_sexp e';
         (lam_vars e1 \<union> lam_vars e2 \<union> lam_vars e3) \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
         disj_use_env rx1 (lift_use_env rx2 r); x \<notin> ref_vars e1; well_typed (add_env env x t) (add_use_env rx1 x r) e1 BoolTy r_s2 rx'; x \<notin> ref_vars e2;
         x \<notin> ref_vars e3; well_typed (add_env env x t) r_s2 e2 tau r_se rx1a; well_typed (add_env env x t) r_s2 e3 tau r_se rx2a\<rbrakk>
@@ -2773,11 +2797,11 @@ lemma wt_sexp_add_vars: "\<lbrakk> well_typed env r_s1 e tau r_s2 rx; is_sexp e;
 
 lemma stpx_lam_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e;
-            x \<notin> ref_vars e; r \<noteq> NoPerm; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
+            x \<notin> ref_vars e; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
-        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<notin> ref_vars e; is_sexp e'; r \<noteq> NoPerm; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<notin> ref_vars e; is_sexp e'; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
         disj_use_env rx1 (lift_use_env rx2 r); x \<in> free_vars e; x \<noteq> x1a; x1a \<notin> free_vars e'; x1a \<notin> ref_vars e';
         lam_vars e \<inter> (free_vars e' \<union> ref_vars e') = {}; x1a \<notin> ref_vars e;
         well_typed (add_env (add_env env x t) x1a t1) (add_use_env rx x1a ra) e t2 r_s' r_end; aff_use_env rx a; leq_use_env rx (add_use_env rx1 x r);
@@ -3264,7 +3288,7 @@ lemma prec_diff_leq_use_env: "\<lbrakk> leq_use_env (diff_use_env r_s r_xa) (dif
 definition stpxac_lift_res where
   "stpxac_lift_res p q r = (p = NoPerm \<or> leq_perm q r)"
     
-lemma stpxac_lift_order: "\<lbrakk> r \<noteq> NoPerm; leq_use_env (lift_use_env rx2a ra) (add_use_env rx1 x r) \<rbrakk> \<Longrightarrow> stpxac_lift_res (rx2a x) ra r"    
+lemma stpxac_lift_order: "\<lbrakk> leq_use_env (lift_use_env rx2a ra) (add_use_env rx1 x r) \<rbrakk> \<Longrightarrow> stpxac_lift_res (rx2a x) ra r"    
   apply (simp add: stpxac_lift_res_def)
   apply (auto)
   apply (case_tac "rx2a x \<noteq> NoPerm")
@@ -3274,28 +3298,32 @@ lemma stpxac_lift_order: "\<lbrakk> r \<noteq> NoPerm; leq_use_env (lift_use_env
   apply (simp add: add_use_env_def)
   apply (case_tac r)
     apply (auto)
+   apply (case_tac ra)
+     apply (auto)
+   apply (case_tac "rx2a x")
+     apply (auto)
   apply (case_tac ra)
     apply (auto)
   done
     
 lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e1 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e1;
-            x \<notin> ref_vars e1; r \<noteq> NoPerm; lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e1; lam_vars e1 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e1 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
         \<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            \<lbrakk>well_typed (add_env env x t) (add_use_env rx1 x r) e2 tau r_se r_xe; well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e2;
-            x \<notin> ref_vars e2; r \<noteq> NoPerm; lam_vars e2 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
+            x \<notin> ref_vars e2; lam_vars e2 \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
             disj_use_env rx1 (lift_use_env rx2 r)\<rbrakk>
            \<Longrightarrow> well_typed env r_s1 (subst_exp e2 x e') tau
                 (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                 (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r));
-        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; is_sexp e'; r \<noteq> NoPerm; (lam_vars e1 \<union> lam_vars e2) \<inter> (free_vars e' \<union> ref_vars e') = {};
+        well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; is_sexp e'; (lam_vars e1 \<union> lam_vars e2) \<inter> (free_vars e' \<union> ref_vars e') = {};
         leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1; disj_use_env rx1 (lift_use_env rx2 r); x \<notin> ref_vars e1; x \<notin> ref_vars e2;
         well_typed (add_env env x t) (add_use_env rx1 x r) e1 (FunTy t1 tau ra a) r_s2 rx1a; well_typed (add_env env x t) r_s2 e2 t1 r_s3 rx2a;
-        leq_use_env r_se (diff_use_env r_s3 (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_ex)); ra \<noteq> NoPerm;
+        leq_use_env r_se (diff_use_env r_s3 (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_ex));
         leq_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_s3; disj_use_env rx1a (lift_use_env rx2a ra); leq_use_env r_xe r_se;
         leq_use_env r_ex (add_use_env rx1 x r); leq_use_env (app_req rx1a rx2a ra tau r_ex) r_xe\<rbrakk>
        \<Longrightarrow> \<exists>t1 ra a r_s2 rx1.
@@ -3304,7 +3332,6 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
                   well_typed env r_s2 (subst_exp e2 x e') t1 r_s3 rx2a \<and>
                   (\<exists>r_ex. leq_use_env (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))
                            (diff_use_env r_s3 (comp_use_env (comp_use_env rx1 (lift_use_env rx2a ra)) r_ex)) \<and>
-                          ra \<noteq> NoPerm \<and>
                           leq_use_env (comp_use_env rx1 (lift_use_env rx2a ra)) r_s3 \<and>
                           disj_use_env rx1 (lift_use_env rx2a ra) \<and>
                           leq_use_env (diff_use_env (stpx_req (rem_use_env r_xe x) (lift_use_env rx2 (r_xe x)) (r_xe x)) (end_neg_use_env r_se x rx2 r))
@@ -3341,7 +3368,6 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
   apply (simp add: add_use_env_def)
     (* - prelim: either rx2a x = None or ra \<le> r *)
   apply (cut_tac ?rx1.0="rx1" and rx2a="rx2a" and x="x" and r="r" and ra="ra" in stpxac_lift_order)
-    apply (simp)
    apply (rule_tac r_sb="comp_use_env rx1a (lift_use_env rx2a ra)" in trans_leq_use_env)
     apply (rule_tac r_sb="r_s3" in trans_leq_use_env)
      apply (simp_all)
@@ -3677,21 +3703,30 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
         apply (rule_tac prec_diff_leq_use_env)
          apply (rule_tac id_leq_use_env)
         apply (rule_tac prec_diff_leq_use_env)
-    (* - if r = Use, then this inequality is trivial because rx2 is weak. *)
+    (* - if r = Use / r = None, then this inequality is trivial because rx2 is weak. *)
          apply (case_tac "\<not> is_own r")
           apply (case_tac r)
-            apply (auto)
+           apply (auto)
            apply (rule_tac rhs_weak_leq_use_env)
             apply (rule_tac weak_diff_use_env)
             apply (simp add: stpx_ex_def)
             apply (auto)
-              apply (simp add: weak_use_env_def)
-              apply (simp add: empty_use_env_def)
-             apply (rule_tac drop_weak_use_env)
+             apply (simp add: weak_use_env_def)
+             apply (simp add: empty_use_env_def)
             apply (case_tac "rx1a x")
               apply (simp_all)
            apply (rule_tac self_diff_leq_use_env)
-          apply (simp add: is_own_def)
+          apply (rule_tac rhs_weak_leq_use_env)
+           apply (rule_tac weak_diff_use_env)
+           apply (simp add: stpx_ex_def)
+            apply (auto)
+             apply (simp add: weak_use_env_def)
+             apply (simp add: empty_use_env_def)
+            apply (rule_tac drop_weak_use_env)
+           apply (case_tac "rx1a x")
+             apply (simp_all)
+          apply (rule_tac self_diff_leq_use_env)
+         apply (simp add: is_own_def)
     (* - if r_se x = None, then rx2 will annihilate itself *)
          apply (case_tac "r_se x = NoPerm")
           apply (case_tac "end_neg_use_env r_se x rx2 r \<noteq> lift_use_env rx2 r")
@@ -3729,23 +3764,26 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            apply (rule_tac weak_diff_use_env)
            apply (rule_tac weak_lift_empty_use_env)
          apply (rule_tac self_diff_leq_use_env)
-    (* - otherwise say that rx2a x = Use. say that r = Use. then ra = Use, because lift rx2a ra x \<le> (rx + x: r) x *)
+    (* - otherwise say that rx2a x = Use. say that r = Use. then ra \<noteq> Own, because lift rx2a ra x \<le> (rx + x: r) x *)
          apply (case_tac "r = UsePerm")
-          apply (case_tac "ra \<noteq> UsePerm")
+          apply (case_tac "is_own ra")
            apply (cut_tac r_x="lift_use_env rx2a ra" and r_s="add_use_env rx1 x r" and x="x" in spec_leq_perm)
             apply (rule_tac r_sb="comp_use_env rx1a (lift_use_env rx2a ra)" in trans_leq_use_env)
              apply (rule_tac r_sb="r_s3" in trans_leq_use_env)
               apply (simp_all)
             apply (rule_tac self_comp_leq_use_env2)
-           apply (simp add: add_use_env_def)
-           apply (case_tac ra)
-             apply (auto)
+          apply (simp add: add_use_env_def)
+          apply (simp add: is_own_def)
     (* - then we can again show the subtractant is weak *)
           apply (rule_tac rhs_weak_leq_use_env)
            apply (rule_tac weak_diff_use_env)
-           apply (simp add: stpx_ex_def)
+          apply (simp add: stpx_ex_def)
+          apply (simp add: is_own_def)
+          apply (case_tac ra)
+            apply (auto)
            apply (rule_tac drop_weak_use_env)
-          apply (rule_tac self_diff_leq_use_env)
+          apply (rule_tac drop_weak_use_env)
+         apply (rule_tac self_diff_leq_use_env)
     (* - if r_se x = None, then all of rx2 will be subtracted out *)
          apply (case_tac "r_se x = NoPerm")
           apply (case_tac "end_neg_use_env r_se x rx2 r \<noteq> lift_use_env rx2 r")
@@ -3755,7 +3793,7 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
            apply (case_tac r)
              apply (simp_all)
           apply (rule_tac leq_empty_use_env)
-    (* - if r_se x \<noteq> None, then we once again show that ra = Use, since r_se \<le> r_s3 - (lift rx2 ra) *)
+    (* - if r_se x \<noteq> None, then we once again show that ra \<noteq> Own, since r_se \<le> r_s3 - (lift rx2 ra) *)
          apply (case_tac "ra = OwnPerm")
           apply (cut_tac r_x="r_se" and r_s="diff_use_env r_s3 (lift_use_env rx2a ra)" and x="x" in spec_leq_perm)
            apply (rule_tac r_sb="diff_use_env r_s3 (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_ex)" in trans_leq_use_env)
@@ -3779,17 +3817,24 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
           apply (simp add: stpx_ex_def)
           apply (rule_tac drop_weak_use_env)
          apply (rule_tac self_diff_leq_use_env)
+        apply (rule_tac rhs_weak_leq_use_env)
+         apply (rule_tac weak_diff_use_env)
+         apply (simp add: stpx_ex_def)
+         apply (rule_tac drop_weak_use_env)
+        apply (rule_tac self_diff_leq_use_env)
     (* - lastly we show that if rx2a x = OwnPerm, r_se x = None *)
         apply (case_tac "\<not> r_se x = NoPerm")
          apply (cut_tac r_s="r_s3" and r_ex="comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_ex" and x="x" in diff_use_none_ex)
           apply (simp add: comp_use_env_def)
           apply (case_tac ra)
             apply (auto)
+           apply (case_tac "rx1a x")
+             apply (auto)
           apply (case_tac "rx1a x")
             apply (auto)
-          apply (case_tac "rx1a x")
-            apply (auto)
-         apply (cut_tac r_x="r_se" and r_s="diff_use_env r_s3 (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_ex)" and x="x" in leq_use_none)
+         apply (case_tac "rx1a x")
+           apply (auto)
+        apply (cut_tac r_x="r_se" and r_s="diff_use_env r_s3 (comp_use_env (comp_use_env rx1a (lift_use_env rx2a ra)) r_ex)" and x="x" in leq_use_none)
           apply (simp_all)
     (* - with that we can show the rx2 completely subtracts itself out *)
         apply (case_tac "\<not> end_neg_use_env r_se x rx2 r = lift_use_env rx2 r")
@@ -3881,10 +3926,12 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
       which means r = OwnPerm unless both ra + x are use.
       therefore we expect (lift (lift rx2 ..) ra) to be
       subtractible from (lift rx2 r) *)    
-       apply (case_tac "r = UsePerm")
-        apply (simp)
+       apply (case_tac "\<not> is_own r")
+        apply (simp add: is_own_def)
         apply (case_tac "\<not> lift_use_env rx2 (rx2a x) = rx2")
          apply (case_tac "rx2a x")
+           apply (auto)
+         apply (case_tac r)
            apply (auto)
         apply (cut_tac r_x="lift_use_env rx2a ra" and r_s="add_use_env rx1 x r" and x="x" in spec_leq_perm)
          apply (rule_tac r_sb="comp_use_env rx1a (lift_use_env rx2a ra)" in trans_leq_use_env)
@@ -3895,14 +3942,25 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
         apply (case_tac "ra = OwnPerm")
          apply (case_tac "rx2a x")
            apply (simp_all)
+          apply (case_tac r)
+            apply (simp_all)
         apply (case_tac "ra")
-          apply (simp_all)
-        apply (rule_tac self_comp_leq_use_env2)
-    (* - if r is not a Use, then rx2 is maximally lifted *)
+           apply (simp_all)
+         apply (rule_tac comp_leq_use_env2)
+         apply (rule_tac self_lift_leq_use_env)
+        apply (case_tac "lift_use_env rx2 ra \<noteq> rx2")
+         apply (case_tac "ra")
+           apply (simp_all)
+        apply (rule_tac comp_leq_use_env2)
+        apply (rule_tac self_lift_leq_use_env)
+    (* - if r is not Own, then rx2 is maximally lifted *)(*
        apply (case_tac "\<not> is_own r")
         apply (simp add: is_own_def)
         apply (case_tac r)
           apply (simp_all)
+        apply (rule_tac comp_leq_use_env2)
+        apply (case_tac "rx2a x")
+          apply (auto)*)
        apply (rule_tac comp_leq_use_env2)
        apply (rule_tac lhs_lift_leq_use_env)
         apply (rule_tac lhs_lift_leq_use_env)
@@ -4293,7 +4351,7 @@ lemma stpx_app_case: "\<lbrakk>\<And>env x tau t rx1 r_se r_xe r_s1 rx2 r.
     *)
 
 lemma subst_type_preserve_x: "\<lbrakk> well_typed (add_env env x t) (add_use_env rx1 x r) e tau r_se r_xe;
-  well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e; x \<notin> ref_vars e; is_sexp e'; r \<noteq> NoPerm;
+  well_typed env rx2 e' t rx2 rx2; rx1 x = NoPerm; x \<in> free_vars e; x \<notin> ref_vars e; is_sexp e'; (*r \<noteq> NoPerm;*)
   lam_vars e \<inter> (free_vars e' \<union> ref_vars e') = {}; leq_use_env (comp_use_env rx1 (lift_use_env rx2 r)) r_s1;
   disj_use_env rx1 (lift_use_env rx2 r) \<rbrakk> \<Longrightarrow>
   well_typed env r_s1 (subst_exp e x e') tau (diff_use_env (comp_use_env (rem_use_env r_se x) (lift_use_env rx2 r)) (end_neg_use_env r_se x rx2 r))

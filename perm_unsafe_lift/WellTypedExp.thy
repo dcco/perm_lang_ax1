@@ -154,7 +154,7 @@ fun const_type :: "p_const \<Rightarrow> p_type set" where
   (*
 | "const_type PairConst = {take_fun t1 (take_fun t2 (PairTy t1 t2) Aff) NoAff | t1 t2. True}"*)
   (* - for unpacking, the pair is assumed to be owned, whatever is put in *)
-| "const_type UnpackConst = {pure_fun (FunTy t1 (FunTy t2 tx r a) r a) (FunTy (PairTy t1 t2 r) tx r a) Prim | t1 t2 tx r a. a \<noteq> Prim}"
+| "const_type UnpackConst = {FunTy (PairTy t1 t2 r) (FunTy (FunTy t1 (FunTy t2 tx r (as_aff r')) r (as_aff r')) tx r' (as_aff r)) r Prim | t1 t2 tx r r'. leq_perm r r'}"
   (* channels: all uses of a channel use up ownership *)
 | "const_type NewChanConst = {pure_fun UnitTy (PairTy (ChanTy t SEnd) (ChanTy t REnd) OwnPerm) Prim | t. True}"
 | "const_type SendConst = {pure_fun (ChanTy t SEnd) (FunTy t UnitTy r Ref) Prim | t r. is_own r}"

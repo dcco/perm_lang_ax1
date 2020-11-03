@@ -20,7 +20,8 @@ lemma app_red_exp_sub_env: "\<lbrakk> app_red_exp are (s1, e1) ax (s2, e2) \<rbr
        apply (rule_tac id_sub_env)
       apply (case_tac c)
                   apply (auto)
-       apply (rule_tac add_sub_env)
+        apply (rule_tac add_sub_env)
+        apply (rule_tac id_sub_env)
        apply (rule_tac id_sub_env)
       apply (rule_tac add_sub_env)
       apply (rule_tac add_sub_env)
@@ -57,8 +58,8 @@ lemma srps_thread_case: "\<lbrakk>well_typed_system env rs_map p_map s1 ps1; val
   apply (case_tac "p_map u")
    apply (auto)
     (* using the gsre lemma, we know that the resulting expression will be well-typed. *)
-  apply (cut_tac env="env" and ?r_s1.0="a" and h="h" and ?e1.0="e1" and tau="UnitTy" and ?r_s2.0="r_s2" and rx="rx" and ?s1.0="s1" and
-        rs_map="rs_map" and r_exp="app_red_exp" and ?e2.0="e2" and ax="ax" and ?s2.0="s2" and r_f="a" in gen_safe_red_exp)
+  apply (cut_tac env="env" and ?r_s1.0="a" and ?e1.0="app_hole h e1" and tau="UnitTy" and ?r_s2.0="r_s2" and rx="rx" and ?s1.0="s1" and
+        rs_map="rs_map" and ?e2.0="app_hole h e2" and ax="ax" and ?s2.0="s2" and r_f="a" in safe_full_red_exp)
          apply (auto)
     apply (simp add: valid_exp_use_env_def)
     apply (simp add: sub_nres_map_def)
@@ -1071,6 +1072,6 @@ lemma safe_red_proc_set: "\<lbrakk> well_typed_system env rs_map p_map s1 ps1; r
     (* send case. *)
   apply (rule_tac srps_send_case)
                 apply (auto)
-done  
+done
   
 end
